@@ -1,0 +1,440 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{layout}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage[toc,page]{appendix}
+\usepackage{bm}
+\usepackage{enumitem}
+\usepackage{multirow}
+\usepackage[export]{adjustbox}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{tabularx} % put in preamble
+\makeatletter
+
+\newcommand{\thickhline}{%
+    \noalign {\ifnum 0=`}\fi \hrule height 1pt
+    \futurelet \reserved@a \@xhline
+}
+\newcolumntype{"}{@{\hskip\tabcolsep\vrule width 1pt\hskip\tabcolsep}}
+\makeatother
+
+\renewcommand{\refname}{\large\textbf{References}}
+\pagestyle{fancy}
+\renewcommand{\headrulewidth}{0.6pt}
+\renewcommand{\headwidth}{7.5in}
+
+\fancyfoot{} % clear all footer fields
+\fancyhead{} % clear all header fields
+
+\fancyhead[LO]{\small\textbf{L16} - \textit{Uncorrelated Track Processing Algorithms}}
+\fancyhead[RO]{\small\textbf{Documentation, XX/XX/XXXX - XX/XX/XXXX}}
+\fancyfoot[RO]{\small\textbf{\thepage}}
+\fancyfoot[LO]{\small{\textit{Galang, Kyle F.} \textit{Aurela Broqi,} \textit{Ruben Dennis,} \textit{Aaron Nogues,} \textit{Ezra Stone}}}
+
+\newcommand{\degr}{$^{\circ}$}  % a degrees symbol
+
+%\setlength\parskip{\medskipamount}
+\setlength\parindent{0pt}
+
+% Set page margins
+\geometry{lmargin=0.5in,rmargin=0.5in,tmargin=1.0in,bmargin=1.0in}
+
+\renewcommand{\thesubsection}{\arabic{section}.\arabic{subsection}}
+\addtocounter{section}{0}
+\addtocounter{subsection}{0}
+
+\begin{document}
+
+% In the following template, replace/edit 'Report' with the appropriate title and context. 
+% Add an appropriate date or range of dates where applicable.
+
+\begin{titlepage}
+\begin{center}
+\vspace*{1cm}
+	\huge{\textbf{Uncorrelated Track Processing Algorithms}}\\
+	\vspace{0.5cm}
+	\large{\textit{Senior Design 2025-2026}}\\
+	\vspace{1.5cm}
+	\textit{Kyle F. Galang}\\
+	\textit{Aurela Broqi}\\
+	\textit{Ruben Dennis}\\
+	\textit{Aaron Nogues}\\
+	\textit{Ezra Stone}
+	\vfill
+	\begin{figure}[H]
+	\centering
+	\begin{center}
+	\includegraphics[scale=0.25, center]{UCF-logo.png}
+	\end{center}
+	\end{figure}
+	University of Central Florida\\
+	Department of Computer Science
+\end{center}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Kyle's Section: Senior Design I Documentation Build-up}
+\subsection{Week 1 Research Break-down}
+\subsubsection{Project Con-ops and Organization}
+\textit{\footnotesize{\textbf{Reference:} L16 - Design Proposal and Team Contract Report}} 
+\begin{itemize} % Itemized list format
+	\item Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec id nisl nec velit dictum suscipit. 
+	\item Curabitur porttitor ligula eget ante fringilla, in scelerisque massa ultrices. Pellentesque habitant morbi tristique senectus et netus.
+	\item Components needed related to electronics:
+	\begin{itemize}[label=$-$] % Second layer nested itemized list
+		\item Camera requirements [0.4MP, USB3.0, 520fps]: 
+			\begin{itemize} % Third layer nested itemized list
+			\item Integer nec sem eget leo aliquet rhoncus.
+			\item Pellentesque vel turpis dictum, tincidunt quam id, ultrices lacus.
+			\item Morbi sit amet augue eu nulla sollicitudin sagittis.
+			\item Proin feugiat ligula ac eros viverra, sit amet cursus neque varius. 
+			\item Aliquam erat volutpat.
+			\end{itemize}
+			
+		\item Camera requirements [2.0 MP, USB3.0, 125fps] : 
+			\begin{itemize} % Third layer nested itemized list
+			\item Aenean ac libero sit amet ligula malesuada malesuada.
+			\item Sed euismod leo nec mi suscipit, at dignissim nunc volutpat.
+			\item Cras interdum purus at justo venenatis, eu imperdiet odio egestas.
+			\item Fusce vitae orci a lectus convallis posuere.
+			\end{itemize}
+	\end{itemize}
+\end{itemize}
+
+\subsubsection{Software Integration into Research}
+\textit{\footnotesize{\textbf{Reference:} GitHub - github.com/CiboAtlas/UNCORRELATED-TRACK-PROCESSING}} \\ 
+\begin{itemize} % Itemized list format
+	\item Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean vitae lectus non erat euismod bibendum.
+	\item Curabitur finibus ex et neque malesuada, quis congue ligula ultrices. Sed at lacinia urna, id iaculis mauris.
+	\item Components needed related to electronics:
+	\begin{itemize}[label=$-$] % Second layer nested itemized list
+		\item Camera requirements [Mini AX200]: 
+			\begin{itemize} % Third layer nested itemized list
+			\item Vestibulum ante ipsum primis in faucibus orci luctus et ultrices.
+			\item Phasellus ac nulla quis libero porta sagittis eget at eros.
+			\item Nullam gravida eros nec justo cursus, sit amet maximus libero semper.
+			\end{itemize}
+			
+		\item Fiber Optic (Cables and Couplers): 
+			\begin{itemize} % Third layer nested itemized list
+			\item Suspendisse potenti. Vivamus viverra ipsum vel est suscipit, sit amet feugiat lorem mattis.
+			\end{itemize}
+	\end{itemize}
+\end{itemize}
+
+\subsubsection{OpenEvolve Environment Setup}
+\begin{table}[H]
+\fontsize{11}{11}\selectfont
+\centering
+\caption*{Current Draw}
+\vspace{-7pt}
+\begin{tabularx}{\textwidth}{l|l|c|l|c|X}
+\toprule
+\textbf{LLM Name} & \textbf{Release Date} & \textbf{\# Major Version} & \textbf{Developer} & \textbf{Training Data Size (TB)} & \textbf{Key Milestones} \\
+\midrule
+GPT-4 & 3/1/2023 & 4 & OpenAI & 1000+ & Multimodality, Improved Reasoning \\
+Claude 3 Opus & 3/1/2024 & 3 & Anthropic & 800+ & Vision Capabilities, Context Window \\
+Gemini Ultra & 2/1/2024 & 1.5 & Google & 2000+ & Native Multimodality, Enhanced Code \\
+LLaMA 3 & 4/1/2024 & 3 & Meta & 1500+ & Open Source, Scalable Architectures \\
+Mistral Large & 2/1/2024 & 2 & Mistral AI & 500+ & Efficiency, Multilingual Support \\
+Falcon 180B & 9/1/2023 & 1 & TII & 2.63 & Open Source, Competitive Performance \\
+\midrule
+\bottomrule
+\end{tabularx}
+\end{table}
+\newpage
+
+\section{Aurela's Section: Senior Design I Documentation Build-up}
+\subsection{Week 1 Research Break-down}
+\subsubsection{Topic no.1}
+\textit{\footnotesize{\textbf{Reference:} L16 - Design Proposal and Team Contract Report}} 
+\begin{itemize} % Itemized list format
+	\item Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec id nisl nec velit dictum suscipit. 
+	\item Curabitur porttitor ligula eget ante fringilla, in scelerisque massa ultrices. Pellentesque habitant morbi tristique senectus et netus.
+	\item Components needed related to electronics:
+	\begin{itemize}[label=$-$] % Second layer nested itemized list
+		\item Camera requirements [0.4MP, USB3.0, 520fps]: 
+			\begin{itemize} % Third layer nested itemized list
+			\item Integer nec sem eget leo aliquet rhoncus.
+			\item Pellentesque vel turpis dictum, tincidunt quam id, ultrices lacus.
+			\item Morbi sit amet augue eu nulla sollicitudin sagittis.
+			\item Proin feugiat ligula ac eros viverra, sit amet cursus neque varius. 
+			\item Aliquam erat volutpat.
+			\end{itemize}
+			
+		\item Camera requirements [2.0 MP, USB3.0, 125fps] : 
+			\begin{itemize} % Third layer nested itemized list
+			\item Aenean ac libero sit amet ligula malesuada malesuada.
+			\item Sed euismod leo nec mi suscipit, at dignissim nunc volutpat.
+			\item Cras interdum purus at justo venenatis, eu imperdiet odio egestas.
+			\item Fusce vitae orci a lectus convallis posuere.
+			\end{itemize}
+	\end{itemize}
+\end{itemize}
+
+\subsubsection{Topic no.2}
+\textit{\footnotesize{\textbf{Reference:} GitHub - github.com/CiboAtlas/UNCORRELATED-TRACK-PROCESSING}} \\ 
+\begin{itemize} % Itemized list format
+	\item Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean vitae lectus non erat euismod bibendum.
+	\item Curabitur finibus ex et neque malesuada, quis congue ligula ultrices. Sed at lacinia urna, id iaculis mauris.
+	\item Components needed related to electronics:
+	\begin{itemize}[label=$-$] % Second layer nested itemized list
+		\item Camera requirements [Mini AX200]: 
+			\begin{itemize} % Third layer nested itemized list
+			\item Vestibulum ante ipsum primis in faucibus orci luctus et ultrices.
+			\item Phasellus ac nulla quis libero porta sagittis eget at eros.
+			\item Nullam gravida eros nec justo cursus, sit amet maximus libero semper.
+			\end{itemize}
+			
+		\item Fiber Optic (Cables and Couplers): 
+			\begin{itemize} % Third layer nested itemized list
+			\item Suspendisse potenti. Vivamus viverra ipsum vel est suscipit, sit amet feugiat lorem mattis.
+			\end{itemize}
+	\end{itemize}
+\end{itemize}
+
+\subsubsection{Topic no.3}
+\begin{table}[H]
+\fontsize{11}{11}\selectfont
+\centering
+\caption*{Current Draw}
+\vspace{-7pt}
+\begin{tabularx}{\textwidth}{l|l|c|l|c|X}
+\toprule
+\textbf{LLM Name} & \textbf{Release Date} & \textbf{\# Major Version} & \textbf{Developer} & \textbf{Training Data Size (TB)} & \textbf{Key Milestones} \\
+\midrule
+GPT-4 & 3/1/2023 & 4 & OpenAI & 1000+ & Multimodality, Improved Reasoning \\
+Claude 3 Opus & 3/1/2024 & 3 & Anthropic & 800+ & Vision Capabilities, Context Window \\
+Gemini Ultra & 2/1/2024 & 1.5 & Google & 2000+ & Native Multimodality, Enhanced Code \\
+LLaMA 3 & 4/1/2024 & 3 & Meta & 1500+ & Open Source, Scalable Architectures \\
+Mistral Large & 2/1/2024 & 2 & Mistral AI & 500+ & Efficiency, Multilingual Support \\
+Falcon 180B & 9/1/2023 & 1 & TII & 2.63 & Open Source, Competitive Performance \\
+\midrule
+\bottomrule
+\end{tabularx}
+\end{table}
+\newpage
+
+\section{Ruben's Section: Senior Design I Documentation Build-up}
+\subsection{Week 1 Research Break-down}
+\subsubsection{Topic no.1}
+\textit{\footnotesize{\textbf{Reference:} L16 - Design Proposal and Team Contract Report}} 
+\begin{itemize} % Itemized list format
+	\item Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec id nisl nec velit dictum suscipit. 
+	\item Curabitur porttitor ligula eget ante fringilla, in scelerisque massa ultrices. Pellentesque habitant morbi tristique senectus et netus.
+	\item Components needed related to electronics:
+	\begin{itemize}[label=$-$] % Second layer nested itemized list
+		\item Camera requirements [0.4MP, USB3.0, 520fps]: 
+			\begin{itemize} % Third layer nested itemized list
+			\item Integer nec sem eget leo aliquet rhoncus.
+			\item Pellentesque vel turpis dictum, tincidunt quam id, ultrices lacus.
+			\item Morbi sit amet augue eu nulla sollicitudin sagittis.
+			\item Proin feugiat ligula ac eros viverra, sit amet cursus neque varius. 
+			\item Aliquam erat volutpat.
+			\end{itemize}
+			
+		\item Camera requirements [2.0 MP, USB3.0, 125fps] : 
+			\begin{itemize} % Third layer nested itemized list
+			\item Aenean ac libero sit amet ligula malesuada malesuada.
+			\item Sed euismod leo nec mi suscipit, at dignissim nunc volutpat.
+			\item Cras interdum purus at justo venenatis, eu imperdiet odio egestas.
+			\item Fusce vitae orci a lectus convallis posuere.
+			\end{itemize}
+	\end{itemize}
+\end{itemize}
+
+\subsubsection{Topic no.2}
+\textit{\footnotesize{\textbf{Reference:} GitHub - github.com/CiboAtlas/UNCORRELATED-TRACK-PROCESSING}} \\ 
+\begin{itemize} % Itemized list format
+	\item Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean vitae lectus non erat euismod bibendum.
+	\item Curabitur finibus ex et neque malesuada, quis congue ligula ultrices. Sed at lacinia urna, id iaculis mauris.
+	\item Components needed related to electronics:
+	\begin{itemize}[label=$-$] % Second layer nested itemized list
+		\item Camera requirements [Mini AX200]: 
+			\begin{itemize} % Third layer nested itemized list
+			\item Vestibulum ante ipsum primis in faucibus orci luctus et ultrices.
+			\item Phasellus ac nulla quis libero porta sagittis eget at eros.
+			\item Nullam gravida eros nec justo cursus, sit amet maximus libero semper.
+			\end{itemize}
+			
+		\item Fiber Optic (Cables and Couplers): 
+			\begin{itemize} % Third layer nested itemized list
+			\item Suspendisse potenti. Vivamus viverra ipsum vel est suscipit, sit amet feugiat lorem mattis.
+			\end{itemize}
+	\end{itemize}
+\end{itemize}
+
+\subsubsection{Topic no.3}
+\begin{table}[H]
+\fontsize{11}{11}\selectfont
+\centering
+\caption*{Current Draw}
+\vspace{-7pt}
+\begin{tabularx}{\textwidth}{l|l|c|l|c|X}
+\toprule
+\textbf{LLM Name} & \textbf{Release Date} & \textbf{\# Major Version} & \textbf{Developer} & \textbf{Training Data Size (TB)} & \textbf{Key Milestones} \\
+\midrule
+GPT-4 & 3/1/2023 & 4 & OpenAI & 1000+ & Multimodality, Improved Reasoning \\
+Claude 3 Opus & 3/1/2024 & 3 & Anthropic & 800+ & Vision Capabilities, Context Window \\
+Gemini Ultra & 2/1/2024 & 1.5 & Google & 2000+ & Native Multimodality, Enhanced Code \\
+LLaMA 3 & 4/1/2024 & 3 & Meta & 1500+ & Open Source, Scalable Architectures \\
+Mistral Large & 2/1/2024 & 2 & Mistral AI & 500+ & Efficiency, Multilingual Support \\
+Falcon 180B & 9/1/2023 & 1 & TII & 2.63 & Open Source, Competitive Performance \\
+\midrule
+\bottomrule
+\end{tabularx}
+\end{table}
+\newpage
+
+\section{Aaron's Section: Senior Design I Documentation Build-up}
+\subsection{Week 1 Research Break-down}
+\subsubsection{Topic no.1}
+\textit{\footnotesize{\textbf{Reference:} L16 - Design Proposal and Team Contract Report}} 
+\begin{itemize} % Itemized list format
+	\item Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec id nisl nec velit dictum suscipit. 
+	\item Curabitur porttitor ligula eget ante fringilla, in scelerisque massa ultrices. Pellentesque habitant morbi tristique senectus et netus.
+	\item Components needed related to electronics:
+	\begin{itemize}[label=$-$] % Second layer nested itemized list
+		\item Camera requirements [0.4MP, USB3.0, 520fps]: 
+			\begin{itemize} % Third layer nested itemized list
+			\item Integer nec sem eget leo aliquet rhoncus.
+			\item Pellentesque vel turpis dictum, tincidunt quam id, ultrices lacus.
+			\item Morbi sit amet augue eu nulla sollicitudin sagittis.
+			\item Proin feugiat ligula ac eros viverra, sit amet cursus neque varius. 
+			\item Aliquam erat volutpat.
+			\end{itemize}
+			
+		\item Camera requirements [2.0 MP, USB3.0, 125fps] : 
+			\begin{itemize} % Third layer nested itemized list
+			\item Aenean ac libero sit amet ligula malesuada malesuada.
+			\item Sed euismod leo nec mi suscipit, at dignissim nunc volutpat.
+			\item Cras interdum purus at justo venenatis, eu imperdiet odio egestas.
+			\item Fusce vitae orci a lectus convallis posuere.
+			\end{itemize}
+	\end{itemize}
+\end{itemize}
+
+\subsubsection{Topic no.2}
+\textit{\footnotesize{\textbf{Reference:} GitHub - github.com/CiboAtlas/UNCORRELATED-TRACK-PROCESSING}} \\ 
+\begin{itemize} % Itemized list format
+	\item Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean vitae lectus non erat euismod bibendum.
+	\item Curabitur finibus ex et neque malesuada, quis congue ligula ultrices. Sed at lacinia urna, id iaculis mauris.
+	\item Components needed related to electronics:
+	\begin{itemize}[label=$-$] % Second layer nested itemized list
+		\item Camera requirements [Mini AX200]: 
+			\begin{itemize} % Third layer nested itemized list
+			\item Vestibulum ante ipsum primis in faucibus orci luctus et ultrices.
+			\item Phasellus ac nulla quis libero porta sagittis eget at eros.
+			\item Nullam gravida eros nec justo cursus, sit amet maximus libero semper.
+			\end{itemize}
+			
+		\item Fiber Optic (Cables and Couplers): 
+			\begin{itemize} % Third layer nested itemized list
+			\item Suspendisse potenti. Vivamus viverra ipsum vel est suscipit, sit amet feugiat lorem mattis.
+			\end{itemize}
+	\end{itemize}
+\end{itemize}
+
+\subsubsection{Topic no.3}
+\begin{table}[H]
+\fontsize{11}{11}\selectfont
+\centering
+\caption*{Current Draw}
+\vspace{-7pt}
+\begin{tabularx}{\textwidth}{l|l|c|l|c|X}
+\toprule
+\textbf{LLM Name} & \textbf{Release Date} & \textbf{\# Major Version} & \textbf{Developer} & \textbf{Training Data Size (TB)} & \textbf{Key Milestones} \\
+\midrule
+GPT-4 & 3/1/2023 & 4 & OpenAI & 1000+ & Multimodality, Improved Reasoning \\
+Claude 3 Opus & 3/1/2024 & 3 & Anthropic & 800+ & Vision Capabilities, Context Window \\
+Gemini Ultra & 2/1/2024 & 1.5 & Google & 2000+ & Native Multimodality, Enhanced Code \\
+LLaMA 3 & 4/1/2024 & 3 & Meta & 1500+ & Open Source, Scalable Architectures \\
+Mistral Large & 2/1/2024 & 2 & Mistral AI & 500+ & Efficiency, Multilingual Support \\
+Falcon 180B & 9/1/2023 & 1 & TII & 2.63 & Open Source, Competitive Performance \\
+\midrule
+\bottomrule
+\end{tabularx}
+\end{table}
+\newpage
+
+\section{Ezra's Section: Senior Design I Documentation Build-up}
+\subsection{Week 1 Research Break-down}
+\subsubsection{Topic no.1}
+\textit{\footnotesize{\textbf{Reference:} L16 - Design Proposal and Team Contract Report}} 
+\begin{itemize} % Itemized list format
+	\item Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec id nisl nec velit dictum suscipit. 
+	\item Curabitur porttitor ligula eget ante fringilla, in scelerisque massa ultrices. Pellentesque habitant morbi tristique senectus et netus.
+	\item Components needed related to electronics:
+	\begin{itemize}[label=$-$] % Second layer nested itemized list
+		\item Camera requirements [0.4MP, USB3.0, 520fps]: 
+			\begin{itemize} % Third layer nested itemized list
+			\item Integer nec sem eget leo aliquet rhoncus.
+			\item Pellentesque vel turpis dictum, tincidunt quam id, ultrices lacus.
+			\item Morbi sit amet augue eu nulla sollicitudin sagittis.
+			\item Proin feugiat ligula ac eros viverra, sit amet cursus neque varius. 
+			\item Aliquam erat volutpat.
+			\end{itemize}
+			
+		\item Camera requirements [2.0 MP, USB3.0, 125fps] : 
+			\begin{itemize} % Third layer nested itemized list
+			\item Aenean ac libero sit amet ligula malesuada malesuada.
+			\item Sed euismod leo nec mi suscipit, at dignissim nunc volutpat.
+			\item Cras interdum purus at justo venenatis, eu imperdiet odio egestas.
+			\item Fusce vitae orci a lectus convallis posuere.
+			\end{itemize}
+	\end{itemize}
+\end{itemize}
+
+\subsubsection{Topic no.2}
+\textit{\footnotesize{\textbf{Reference:} GitHub - github.com/CiboAtlas/UNCORRELATED-TRACK-PROCESSING}} \\ 
+\begin{itemize} % Itemized list format
+	\item Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean vitae lectus non erat euismod bibendum.
+	\item Curabitur finibus ex et neque malesuada, quis congue ligula ultrices. Sed at lacinia urna, id iaculis mauris.
+	\item Components needed related to electronics:
+	\begin{itemize}[label=$-$] % Second layer nested itemized list
+		\item Camera requirements [Mini AX200]: 
+			\begin{itemize} % Third layer nested itemized list
+			\item Vestibulum ante ipsum primis in faucibus orci luctus et ultrices.
+			\item Phasellus ac nulla quis libero porta sagittis eget at eros.
+			\item Nullam gravida eros nec justo cursus, sit amet maximus libero semper.
+			\end{itemize}
+			
+		\item Fiber Optic (Cables and Couplers): 
+			\begin{itemize} % Third layer nested itemized list
+			\item Suspendisse potenti. Vivamus viverra ipsum vel est suscipit, sit amet feugiat lorem mattis.
+			\end{itemize}
+	\end{itemize}
+\end{itemize}
+
+\subsubsection{Topic no.3}
+\begin{table}[H]
+\fontsize{11}{11}\selectfont
+\centering
+\caption*{Current Draw}
+\vspace{-7pt}
+\begin{tabularx}{\textwidth}{l|l|c|l|c|X}
+\toprule
+\textbf{LLM Name} & \textbf{Release Date} & \textbf{\# Major Version} & \textbf{Developer} & \textbf{Training Data Size (TB)} & \textbf{Key Milestones} \\
+\midrule
+GPT-4 & 3/1/2023 & 4 & OpenAI & 1000+ & Multimodality, Improved Reasoning \\
+Claude 3 Opus & 3/1/2024 & 3 & Anthropic & 800+ & Vision Capabilities, Context Window \\
+Gemini Ultra & 2/1/2024 & 1.5 & Google & 2000+ & Native Multimodality, Enhanced Code \\
+LLaMA 3 & 4/1/2024 & 3 & Meta & 1500+ & Open Source, Scalable Architectures \\
+Mistral Large & 2/1/2024 & 2 & Mistral AI & 500+ & Efficiency, Multilingual Support \\
+Falcon 180B & 9/1/2023 & 1 & TII & 2.63 & Open Source, Competitive Performance \\
+\midrule
+\bottomrule
+\end{tabularx}
+\end{table}
+\newpage
+
+\end{document}
