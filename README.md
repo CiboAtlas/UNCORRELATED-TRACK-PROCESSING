@@ -25,10 +25,10 @@ Aaron Nogues<br>
 Ezra Stone
 
 # Citations
-@software{openevolve,
-  title = {OpenEvolve: an open-source evolutionary coding agent},
-  author = {Asankhaya Sharma},
-  year = {2025},
-  publisher = {GitHub},
-  url = {https://github.com/codelion/openevolve}
+@software{openevolve,<br> 
+  title = {OpenEvolve: an open-source evolutionary coding agent},<br> 
+  author = {Asankhaya Sharma},<br> 
+  year = {2025},<br> 
+  publisher = {GitHub},<br> 
+  url = {https://github.com/codelion/openevolve}<br> 
 }
