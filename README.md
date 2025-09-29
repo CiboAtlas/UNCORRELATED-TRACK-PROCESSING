@@ -13,7 +13,7 @@ OpenEvolve implements a comprehensive evolutionary coding system with:
 - Multi-objective Optimization: Simultaneous optimization of multiple evaluation metrics
 - Checkpoint System: Automatic saving and resuming of evolution state
 
-# Link
+# Links
 https://github.com/codelion/openevolve<br>
 https://pypi.org/project/openevolve/0.1.0/
 
