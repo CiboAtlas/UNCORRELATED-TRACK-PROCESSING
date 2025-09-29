@@ -3,6 +3,7 @@ Collaborating with Airforce Research Laboratory researchers and a 5-person under
 
 # LINK
 https://github.com/codelion/openevolve
+https://pypi.org/project/openevolve/0.1.0/
 
 # Contributors
 Kyle Francis Galang, Aurela Broqi, Ruben Dennis, Aaron Nogues, Ezra Stone
