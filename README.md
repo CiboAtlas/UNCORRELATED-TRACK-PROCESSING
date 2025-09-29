@@ -6,4 +6,8 @@ https://github.com/codelion/openevolve<br>
 https://pypi.org/project/openevolve/0.1.0/
 
 # Contributors
-Kyle Francis Galang, Aurela Broqi, Ruben Dennis, Aaron Nogues, Ezra Stone
+Kyle Francis Galang<br> 
+Aurela Broqi<br> 
+Ruben Dennis<br> 
+Aaron Nogues<br> 
+Ezra Stone
