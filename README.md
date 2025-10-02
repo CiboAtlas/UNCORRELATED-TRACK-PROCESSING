@@ -1,34 +1,34 @@
-# ALGORITHMS FOR UNCORRELATED TRACK PROCESSING
-Collaborating with Airforce Research Laboratory researchers and a 5-person undergraduate student team to design and benchmark uncorrelated track processing (UCTP) algorithms for satellite data, leveraging the Google Gemini API to query into OpenEvolve LLM and improve evaluation accuracy. Currently we are evaluating through small problem sets to configure functions for UCTP, then convert into larger scale formats in a high-performance computing cluster using Nvidia SuperPOD to test on larger scale datasets with hopes of finding an efficient evolutionary algorithm and AI architecture to replace.
+# OpenEvolve Setup & Usage
 
-# About OpenEvolve
-Key Features
-OpenEvolve implements a comprehensive evolutionary coding system with:
+This repository contains setup notes and usage instructions for running **OpenEvolve** with different API providers.
 
-- Evolutionary Coding Agent: LLM-guided evolution of entire code files (not just functions)
-- Distributed Controller Loop: Asynchronous pipeline coordinating LLMs, evaluators, and databases
-- Program Database: Storage and sampling of evolved programs with evaluation metrics
-- Prompt Sampling: Context-rich prompts with past programs, scores, and problem descriptions
-- LLM Ensemble: Multiple language models working together for code generation
-- Multi-objective Optimization: Simultaneous optimization of multiple evaluation metrics
-- Checkpoint System: Automatic saving and resuming of evolution state
+---
 
-# Links
-https://github.com/codelion/openevolve<br>
-https://pypi.org/project/openevolve/0.1.0/
+## Installation
 
-# Contributers
-Kyle Francis Galang<br> 
-Aurela Broqi<br> 
-Ruben Dennis<br> 
-Aaron Nogues<br> 
-Ezra Stone
+Clone the repository and install OpenEvolve:
 
-# Citations
-@software{openevolve,<br> 
-  title = {OpenEvolve: an open-source evolutionary coding agent},<br> 
-  author = {Asankhaya Sharma},<br> 
-  year = {2025},<br> 
-  publisher = {GitHub},<br> 
-  url = {https://github.com/codelion/openevolve}<br> 
-}
+```powershell
+pip install openevolve
+```
+
+## virtual env
+
+python -m venv venv
+venv\Scripts\Activate.ps1
+
+## download dependencies
+
+pip install -e .
+
+## export dependencies
+
+pip freeze > requirements.txt
+
+## for openrouter
+
+$env:OPENAI_API_KEY="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"
+
+## running circle_packing, though llm index out of range error
+
+python openevolve-run.py examples/circle_packing/initial_program.py examples/circle_packing/evaluator.py --config examples/circle_packing/config.yaml --iterations 50
