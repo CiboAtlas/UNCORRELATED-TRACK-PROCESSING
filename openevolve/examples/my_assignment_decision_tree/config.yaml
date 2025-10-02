@@ -1,0 +1,53 @@
+max_iterations: 20
+checkpoint_interval: 5
+parallel_evaluations: 1
+
+llm:
+  api_base: "https://api.openai.com/v1"
+  models:
+    - name: "gpt-3.5-turbo"
+      weight: 1.0
+  temperature: 0.7
+  max_tokens: 2000
+  timeout: 60
+
+database:
+  population_size: 10
+  num_islands: 2
+  migration_interval: 5
+  feature_dimensions:
+    - "accuracy"
+    - "complexity"
+
+evaluator:
+  timeout: 60
+  max_retries: 2
+
+prompt:
+  system_message: |
+    You are an expert ML researcher. Improve the split criterion
+    inside the EVOLVE-BLOCK so the decision stump achieves
+    higher accuracy on classification tasks.
+  num_top_programs: 2
+  num_diverse_programs: 2
+
+log_level: "INFO"
+
+
+//model overload or rate limit (per minuet basis)
+
+//short ter goal:
+  - essentially write our own and put into openevolve \
+  - short term to create our own example 
+  - how to take a function and put it into a syntax 
+  - given this function how can we get the optimized program to get optimal behavior 
+  - llms should we use
+  - optimization problems 
+
+
+  significant models paid for api calls 
+
+  - comprehensive analusis of the open evove 
+  - duck db for a database 
+  - focus on openvolve getting 
+
