@@ -27,7 +27,7 @@ pip freeze > requirements.txt
 
 ## for openrouter
 
-$env:OPENAI_API_KEY="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"
+$env:OPENAI_API_KEY="openRouter-API-key"
 
 ## running circle_packing, though llm index out of range error
 
