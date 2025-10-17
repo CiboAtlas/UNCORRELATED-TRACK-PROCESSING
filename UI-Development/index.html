@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="project-initials">L16</span>
+        <span class="project-name">Analytics Console</span>
+      </div>
+      <nav class="nav">
+        <a class="nav-item active" href="#">
+          <span class="icon">🏠</span>
+          <span>Dashboard</span>
+        </a>
+        <a class="nav-item" href="#"><span class="icon">⭐</span><span>B1</span></a>
+        <a class="nav-item" href="#"><span class="icon">🗺️</span><span>B2</span></a>
+        <a class="nav-item" href="#"><span class="icon">🔔</span><span>B3</span></a>
+        <a class="nav-item" href="#"><span class="icon">👤</span><span>B4</span></a>
+        <a class="nav-item" href="#"><span class="icon">📋</span><span>B5</span></a>
+        <a class="nav-item" href="#"><span class="icon">🔤</span><span>B6</span></a>
+        <a class="nav-item" href="#"><span class="icon">↔️</span><span>B7</span></a>
+        <a class="nav-item" href="#"><span class="icon">🚪</span><span>B8</span></a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="content-header">
+        <div class="tabs">
+          <button class="tab active">Filler1</button>
+          <button class="tab">Filler2</button>
+          <button class="tab">Filler3</button>
+        </div>
+      </header>
+
+      <section class="card card-lg">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="metric-label">Total Shipments</span>
+            <h2>Performance</h2>
+          </div>
+          <button class="settings-btn" aria-label="settings">⚙️</button>
+        </div>
+        <div class="card-body">
+          <canvas id="chartPerformance" height="88"></canvas>
+        </div>
+      </section>
+
+      <section class="grid-3">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="metric-icon">🔔</span>
+              <span class="metric-label">Total Shipments</span>
+              <h3>763,215</h3>
+            </div>
+          </div>
+          <div class="card-body">
+            <canvas id="chartMini1" height="120"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="metric-icon">💳</span>
+              <span class="metric-label">Daily Sales</span>
+              <h3>3,500€</h3>
+            </div>
+          </div>
+          <div class="card-body">
+            <canvas id="chartBars" height="120"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="metric-icon">📦</span>
+              <span class="metric-label">Completed Tasks</span>
+              <h3>12,100K</h3>
+            </div>
+          </div>
+          <div class="card-body">
+            <canvas id="chartMini2" height="120"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="assets/js/script.js"></script>
+  </body>
+  </html>
+
+
