@@ -1,0 +1,7 @@
+Workflow of Analytic Console:
+i. run problem
+i. when the command line is prompted to run, the analytic console pops open
+ii. welcome page
+iii. since we already know where were running the current process in OpenEvolve within our directory, just pull from the files that it creates
+iv. fill in the dashboard based off that data.
+v. should have a development tab and that's where we implement the llm
