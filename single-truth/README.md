@@ -1,5 +1,7 @@
 # DO NOT MANIPULATE/TOUCH
 This is Kyle's personal development branch. (http://localhost:5500/)
+python -m http.server 5500
+
 
 # Updates
 - UI is finished
