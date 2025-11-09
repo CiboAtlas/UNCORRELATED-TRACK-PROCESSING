@@ -1,5 +1,5 @@
 # DO NOT MANIPULATE/TOUCH
-This is Kyle's branch working on the UI.
+This is Kyle's personal development branch.
 
 # Updates
 - UI is finished
