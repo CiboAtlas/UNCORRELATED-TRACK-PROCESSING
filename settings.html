@@ -255,7 +255,7 @@
               >
                 Pathway
               </button>
-              <div id="pathwaySubtext" class="settings-subtext">Checkpoints</div>
+              <div id="pathwaySubtext" class="settings-subtext">Select checkpoints folder</div>
               <div class="settings-save-note">
                 Click the Pathway label or use the pencil to change the checkpoint path.
               </div>
@@ -281,7 +281,7 @@
             <div class="settings-actions">
               <button id="editPathBtn" class="settings-icon-btn" type="button" title="Edit checkpoint path">✎</button>
               <button id="copyPathBtn" class="settings-icon-btn" type="button" title="Copy checkpoint path">⧉</button>
-              <button class="settings-icon-btn" type="button" title="More">⋮</button>
+              <button id="clearPathBtn" class="settings-icon-btn" type="button" title="Clear checkpoint path">⋮</button>
             </div>
           </div>
 
@@ -305,7 +305,7 @@
               >
                 Source
               </button>
-              <div id="sourcePathText" class="settings-path-value">config.yaml</div>
+              <div id="sourcePathText" class="settings-path-value">Select config.yaml</div>
               <div class="settings-save-note">
                 Click the Source label or pencil to change the YAML config path.
               </div>
@@ -321,7 +321,7 @@
             <div class="settings-actions">
               <button id="editSourceBtn" class="settings-icon-btn" type="button" title="Edit config YAML path">✎</button>
               <button id="copySourceBtn" class="settings-icon-btn" type="button" title="Copy config YAML path">⧉</button>
-              <button class="settings-icon-btn" type="button" title="More">⋮</button>
+              <button id="clearSourceBtn" class="settings-icon-btn" type="button" title="Clear config YAML path">⋮</button>
             </div>
           </div>
 
@@ -345,7 +345,7 @@
               >
                 Source
               </button>
-              <div id="logsSourcePathText" class="settings-path-value">C:\Users\kfg4s\Downloads\SENIOR DESIGN\openevolve\examples\function_minimization\openevolve_output\logs</div>
+              <div id="logsSourcePathText" class="settings-path-value">Select logs folder</div>
               <div class="settings-save-note">
                 Click the Source label or pencil to change the logs folder used by the OpenEvolve Log panel.
               </div>
@@ -361,7 +361,7 @@
             <div class="settings-actions">
               <button id="editLogsSourceBtn" class="settings-icon-btn" type="button" title="Edit OpenEvolve logs path">✎</button>
               <button id="copyLogsSourceBtn" class="settings-icon-btn" type="button" title="Copy OpenEvolve logs path">⧉</button>
-              <button class="settings-icon-btn" type="button" title="More">⋮</button>
+              <button id="clearLogsSourceBtn" class="settings-icon-btn" type="button" title="Clear OpenEvolve logs path">⋮</button>
             </div>
           </div>
 
@@ -403,7 +403,7 @@
 
       (function () {
         const SETTINGS_API = '/api/settings';
-        const DEFAULT_LOGS_PATH = 'C:\\Users\\kfg4s\\Downloads\\SENIOR DESIGN\\openevolve\\examples\\function_minimization\\openevolve_output\\logs';
+        const DEFAULT_LOGS_PATH = '';
 
         const modal = document.getElementById('settingsEditModal');
         const modalTitle = document.getElementById('settingsModalTitle');
@@ -416,12 +416,15 @@
 
         const copyPathBtn = document.getElementById('copyPathBtn');
         const editPathBtn = document.getElementById('editPathBtn');
+        const clearPathBtn = document.getElementById('clearPathBtn');
 
         const copySourceBtn = document.getElementById('copySourceBtn');
         const editSourceBtn = document.getElementById('editSourceBtn');
+        const clearSourceBtn = document.getElementById('clearSourceBtn');
 
         const copyLogsSourceBtn = document.getElementById('copyLogsSourceBtn');
         const editLogsSourceBtn = document.getElementById('editLogsSourceBtn');
+        const clearLogsSourceBtn = document.getElementById('clearLogsSourceBtn');
 
         let activeMode = '';
 
@@ -450,26 +453,29 @@
           return `${raw.slice(0, 6)}••••••••${raw.slice(-4)}`;
         }
 
+        function applySettingsToUI(settings) {
+          document.getElementById('programNameText').textContent = settings.program_name || 'Program Name';
+          document.getElementById('programSubtext').textContent = settings.program_subtext || 'Initial-program';
+
+          document.getElementById('pathwayNameText').textContent = settings.pathway_label || 'Pathway';
+          document.getElementById('pathwaySubtext').textContent = settings.checkpoints_dir || 'Select checkpoints folder';
+
+          document.getElementById('keyNameText').textContent = settings.api_key_label || 'Key';
+          document.getElementById('keySubtext').textContent = settings.api_key_value
+            ? maskApiKey(settings.api_key_value)
+            : 'OPENAI_API_KEY';
+
+          document.getElementById('datasetSubtext').textContent = 'configuration.yaml';
+          document.getElementById('sourcePathText').textContent = settings.config_yaml_path || 'Select config.yaml';
+
+          document.getElementById('logsDatasetSubtext').textContent = 'logs.txt';
+          document.getElementById('logsSourcePathText').textContent = settings.openevolve_logs_dir || 'Select logs folder';
+        }
+
         async function loadSettings() {
           try {
             const data = await fetchJson(SETTINGS_API, { cache: 'no-store' });
-
-            document.getElementById('programNameText').textContent = data.program_name || 'Program Name';
-            document.getElementById('programSubtext').textContent = data.program_subtext || 'Initial-program';
-
-            document.getElementById('pathwayNameText').textContent = data.pathway_label || 'Pathway';
-            document.getElementById('pathwaySubtext').textContent = data.checkpoints_dir || 'Checkpoints';
-
-            document.getElementById('keyNameText').textContent = data.api_key_label || 'Key';
-            document.getElementById('keySubtext').textContent = data.api_key_value
-              ? maskApiKey(data.api_key_value)
-              : 'OPENAI_API_KEY';
-
-            document.getElementById('datasetSubtext').textContent = 'configuration.yaml';
-            document.getElementById('sourcePathText').textContent = data.config_yaml_path || 'config.yaml';
-
-            document.getElementById('logsDatasetSubtext').textContent = 'logs.txt';
-            document.getElementById('logsSourcePathText').textContent = data.openevolve_logs_dir || DEFAULT_LOGS_PATH;
+            applySettingsToUI(data);
           } catch (err) {
             console.error(err);
             alert(err.message);
@@ -517,18 +523,21 @@
               'checkpoints_dir',
               'Update Checkpoint Path',
               'Checkpoint folder path',
-              document.getElementById('pathwaySubtext').textContent.trim(),
+              document.getElementById('pathwaySubtext').textContent.trim() === 'Select checkpoints folder'
+                ? ''
+                : document.getElementById('pathwaySubtext').textContent.trim(),
               'This updates the server path used by /api/openevolve/evolutions for the dashboard graphs.'
             );
             return;
           }
 
           if (mode === 'config_yaml_path') {
+            const currentValue = document.getElementById('sourcePathText').textContent.trim();
             openModal(
               'config_yaml_path',
               btn.dataset.editTitle || 'Update Config YAML Path',
               btn.dataset.editLabel || 'Config YAML path',
-              document.getElementById('sourcePathText').textContent.trim(),
+              currentValue === 'Select config.yaml' ? '' : currentValue,
               'This updates the server path used by /api/openevolve/config-summary for the Queue panel.'
             );
             return;
@@ -538,7 +547,7 @@
             let currentLogsPath = DEFAULT_LOGS_PATH;
             try {
               const data = await fetchJson(SETTINGS_API, { cache: 'no-store' });
-              currentLogsPath = data.openevolve_logs_dir || DEFAULT_LOGS_PATH;
+              currentLogsPath = data.openevolve_logs_dir || '';
             } catch (_) {}
 
             openModal(
@@ -564,21 +573,23 @@
         }
 
         function openPathModal() {
+          const currentValue = document.getElementById('pathwaySubtext').textContent.trim();
           openModal(
             'checkpoints_dir',
             'Update Checkpoint Path',
             'Checkpoint folder path',
-            document.getElementById('pathwaySubtext').textContent.trim(),
+            currentValue === 'Select checkpoints folder' ? '' : currentValue,
             'This updates the server path used by /api/openevolve/evolutions for the dashboard graphs.'
           );
         }
 
         function openSourceModal() {
+          const currentValue = document.getElementById('sourcePathText').textContent.trim();
           openModal(
             'config_yaml_path',
             'Update Config YAML Path',
             'Config YAML path',
-            document.getElementById('sourcePathText').textContent.trim(),
+            currentValue === 'Select config.yaml' ? '' : currentValue,
             'This updates the server path used by /api/openevolve/config-summary for the Queue panel.'
           );
         }
@@ -587,7 +598,7 @@
           let currentLogsPath = DEFAULT_LOGS_PATH;
           try {
             const data = await fetchJson(SETTINGS_API, { cache: 'no-store' });
-            currentLogsPath = data.openevolve_logs_dir || DEFAULT_LOGS_PATH;
+            currentLogsPath = data.openevolve_logs_dir || '';
           } catch (_) {}
 
           openModal(
@@ -597,6 +608,27 @@
             currentLogsPath,
             'This updates the server path used by /api/openevolve/latest-log for the OpenEvolve Log panel.'
           );
+        }
+
+        async function saveSettingsPayload(payload) {
+          const data = await fetchJson(SETTINGS_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          applySettingsToUI(data.settings || {});
+          return data;
+        }
+
+        async function clearSetting(key) {
+          try {
+            const payload = {};
+            payload[key] = '';
+            await saveSettingsPayload(payload);
+          } catch (err) {
+            alert(err.message);
+          }
         }
 
         async function saveModal() {
@@ -620,29 +652,7 @@
               return;
             }
 
-            const data = await fetchJson(SETTINGS_API, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-
-            document.getElementById('programNameText').textContent = data.settings.program_name || 'Program Name';
-            document.getElementById('programSubtext').textContent = data.settings.program_subtext || 'Initial-program';
-
-            document.getElementById('pathwayNameText').textContent = data.settings.pathway_label || 'Pathway';
-            document.getElementById('pathwaySubtext').textContent = data.settings.checkpoints_dir || 'Checkpoints';
-
-            document.getElementById('keyNameText').textContent = data.settings.api_key_label || 'Key';
-            document.getElementById('keySubtext').textContent = data.settings.api_key_value
-              ? maskApiKey(data.settings.api_key_value)
-              : 'OPENAI_API_KEY';
-
-            document.getElementById('datasetSubtext').textContent = 'configuration.yaml';
-            document.getElementById('sourcePathText').textContent = data.settings.config_yaml_path || 'config.yaml';
-
-            document.getElementById('logsDatasetSubtext').textContent = 'logs.txt';
-            document.getElementById('logsSourcePathText').textContent = data.settings.openevolve_logs_dir || DEFAULT_LOGS_PATH;
-
+            await saveSettingsPayload(payload);
             closeModal();
           } catch (err) {
             alert(err.message);
@@ -663,8 +673,21 @@
         editSourceBtn.addEventListener('click', openSourceModal);
         editLogsSourceBtn.addEventListener('click', openLogsSourceModal);
 
+        clearPathBtn.addEventListener('click', async () => {
+          await clearSetting('checkpoints_dir');
+        });
+
+        clearSourceBtn.addEventListener('click', async () => {
+          await clearSetting('config_yaml_path');
+        });
+
+        clearLogsSourceBtn.addEventListener('click', async () => {
+          await clearSetting('openevolve_logs_dir');
+        });
+
         copyPathBtn.addEventListener('click', async () => {
           const pathText = document.getElementById('pathwaySubtext').textContent.trim();
+          if (!pathText || pathText === 'Select checkpoints folder') return;
           try {
             await navigator.clipboard.writeText(pathText);
           } catch (_) {}
@@ -672,6 +695,7 @@
 
         copySourceBtn.addEventListener('click', async () => {
           const pathText = document.getElementById('sourcePathText').textContent.trim();
+          if (!pathText || pathText === 'Select config.yaml') return;
           try {
             await navigator.clipboard.writeText(pathText);
           } catch (_) {}
@@ -680,7 +704,8 @@
         copyLogsSourceBtn.addEventListener('click', async () => {
           try {
             const data = await fetchJson(SETTINGS_API, { cache: 'no-store' });
-            const pathText = (data.openevolve_logs_dir || DEFAULT_LOGS_PATH).trim();
+            const pathText = (data.openevolve_logs_dir || '').trim();
+            if (!pathText) return;
             await navigator.clipboard.writeText(pathText);
           } catch (_) {}
         });
