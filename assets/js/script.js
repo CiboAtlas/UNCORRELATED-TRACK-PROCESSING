@@ -1350,7 +1350,7 @@
       dom.enterBtn.addEventListener('click', async () => {
         if (state.welcomeExiting) return;
 
-        localStorage.setItem('l16_hasVisited', '1');
+        sessionStorage.setItem('l16_hasVisited', '1');
 
         try {
           await animateWelcomeExit();
@@ -1361,10 +1361,10 @@
     }
 
     const overlay = getEl('welcomeOverlay');
-    const hasVisited = localStorage.getItem('l16_hasVisited') === '1';
+    const hasVisitedThisLaunch = sessionStorage.getItem('l16_hasVisited') === '1';
     const url = new URL(window.location.href);
 
-    if (url.searchParams.get('welcome') === '1' || !hasVisited) {
+    if (url.searchParams.get('welcome') === '1' || !hasVisitedThisLaunch) {
       openWelcome();
     } else if (overlay) {
       overlay.classList.add('hidden');
