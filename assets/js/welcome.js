@@ -21,7 +21,7 @@
   let starMat = null;
   let markers = [];            // red X’s (objects)
   let markerMats = [];         // each X’s material
-A
+
   // shutdown controls
   let shuttingDown = false;
   let shutdownStart = 0;
