@@ -1,11 +1,3 @@
-/**
- * Analytics Console Server
- * - static file hosting
- * - settings storage
- * - OpenEvolve summaries
- * - evaluation render route
- */
-
 'use strict';
 
 const express = require('express');
@@ -30,53 +22,20 @@ const APP = {
   port: Number(process.env.PORT) || 3000
 };
 
+/*
+  PORTABLE DEFAULTS
+  -----------------
+  Do NOT hardcode personal PC paths here.
+*/
 const DEFAULTS = {
-  checkpointsDir:
-    process.env.OPENEVOLVE_CHECKPOINTS_DIR ||
-    path.join(
-      'C:',
-      'Users',
-      'kfg4s',
-      'Downloads',
-      'SENIOR DESIGN',
-      'openevolve',
-      'examples',
-      'function_minimization',
-      'openevolve_output',
-      'checkpoints'
-    ),
-
-  configYamlPath:
-    process.env.OPENEVOLVE_CONFIG_PATH ||
-    path.join(
-      'C:',
-      'Users',
-      'kfg4s',
-      'Downloads',
-      'SENIOR DESIGN',
-      'openevolve',
-      'examples',
-      'function_minimization',
-      'config.yaml'
-    ),
-
-  logsDir:
-    process.env.OPENEVOLVE_LOGS_DIR ||
-    path.join(
-      'C:',
-      'Users',
-      'kfg4s',
-      'Downloads',
-      'SENIOR DESIGN',
-      'openevolve',
-      'examples',
-      'function_minimization',
-      'openevolve_output',
-      'logs'
-    )
+  checkpointsDir: process.env.OPENEVOLVE_CHECKPOINTS_DIR || '',
+  configYamlPath: process.env.OPENEVOLVE_CONFIG_PATH || '',
+  logsDir: process.env.OPENEVOLVE_LOGS_DIR || ''
 };
 
-const SETTINGS_FILE = path.join(__dirname, 'app-settings.json');
+const SETTINGS_FILE =
+  process.env.APP_SETTINGS_FILE ||
+  path.join(__dirname, 'app-settings.json');
 
 /* =========================
    SMALL UTILITIES
@@ -100,6 +59,31 @@ function normalizeMetrics(metrics) {
   return out;
 }
 
+function pathExists(p) {
+  try {
+    fs.accessSync(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isFile(p) {
+  try {
+    return fs.statSync(p).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function isDirectory(p) {
+  try {
+    return fs.statSync(p).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 function ensureExists(targetPath, messagePrefix = 'Path does not exist') {
   if (!fs.existsSync(targetPath)) {
     const error = new Error(`${messagePrefix}: ${targetPath}`);
@@ -108,12 +92,110 @@ function ensureExists(targetPath, messagePrefix = 'Path does not exist') {
   }
 }
 
+function safeResolvePath(inputPath, fallbackBase = __dirname) {
+  if (!inputPath || typeof inputPath !== 'string') {
+    return null;
+  }
+
+  const trimmed = inputPath.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  return path.isAbsolute(trimmed)
+    ? path.normalize(trimmed)
+    : path.normalize(path.join(fallbackBase, trimmed));
+}
+
+function resolveMaybeRelativePath(inputPath) {
+  const trimmed = String(inputPath || '').trim();
+
+  if (!trimmed) {
+    const error = new Error('Please provide a non-empty path');
+    error.status = 400;
+    error.code = 'Missing path';
+    throw error;
+  }
+
+  const resolved = path.isAbsolute(trimmed)
+    ? path.normalize(trimmed)
+    : path.resolve(__dirname, trimmed);
+
+  if (!pathExists(resolved)) {
+    const error = new Error(`Path does not exist: ${resolved}`);
+    error.status = 400;
+    error.code = 'Invalid path';
+    throw error;
+  }
+
+  return resolved;
+}
+
+function ensureYamlFilePath(inputPath, fallbackBase = __dirname) {
+  const resolved = safeResolvePath(inputPath, fallbackBase);
+  if (!resolved) {
+    const error = new Error('Please provide a non-empty config_yaml_path');
+    error.status = 400;
+    error.code = 'Invalid config path';
+    throw error;
+  }
+
+  if (isDirectory(resolved)) {
+    const yaml1 = path.join(resolved, 'config.yaml');
+    const yaml2 = path.join(resolved, 'config.yml');
+
+    if (isFile(yaml1)) return yaml1;
+    if (isFile(yaml2)) return yaml2;
+
+    const error = new Error(
+      `Config path is a directory and does not contain config.yaml or config.yml: ${resolved}`
+    );
+    error.status = 400;
+    error.code = 'Invalid config path';
+    throw error;
+  }
+
+  if (!isFile(resolved)) {
+    const error = new Error(`Config file does not exist: ${resolved}`);
+    error.status = 400;
+    error.code = 'Invalid config path';
+    throw error;
+  }
+
+  return resolved;
+}
+
 function readTextFile(filePath) {
   ensureExists(filePath, 'File not found');
+
+  if (isDirectory(filePath)) {
+    const error = new Error(`Expected a file but got a directory: ${filePath}`);
+    error.status = 400;
+    throw error;
+  }
+
+  return fs.readFileSync(filePath, 'utf8');
+}
+
+function readTextFileSafe(filePath) {
+  if (!filePath) {
+    throw new Error('No file path provided');
+  }
+
+  if (isDirectory(filePath)) {
+    throw new Error(`Expected a file but got a directory: ${filePath}`);
+  }
+
+  if (!isFile(filePath)) {
+    throw new Error(`File does not exist: ${filePath}`);
+  }
+
   return fs.readFileSync(filePath, 'utf8');
 }
 
 function writeTextFile(filePath, content) {
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(filePath, content, 'utf8');
 }
 
@@ -173,28 +255,14 @@ function tailLines(text, maxLines = 120) {
   return lines.slice(-maxLines).join('\n').trimEnd();
 }
 
-function resolveMaybeRelativePath(inputPath) {
-  const trimmed = String(inputPath || '').trim();
-
-  if (!trimmed) {
-    const error = new Error('Please provide a non-empty path');
-    error.status = 400;
-    error.code = 'Missing path';
-    throw error;
+function firstExistingFile(candidates, fallbackBase = __dirname) {
+  for (const candidate of candidates) {
+    const resolved = safeResolvePath(candidate, fallbackBase);
+    if (resolved && isFile(resolved)) {
+      return resolved;
+    }
   }
-
-  const resolved = path.isAbsolute(trimmed)
-    ? trimmed
-    : path.resolve(__dirname, trimmed);
-
-  if (!fs.existsSync(resolved)) {
-    const error = new Error(`Path does not exist: ${resolved}`);
-    error.status = 400;
-    error.code = 'Invalid path';
-    throw error;
-  }
-
-  return resolved;
+  return null;
 }
 
 /* =========================
@@ -209,7 +277,8 @@ function getDefaultSettings() {
     program_name: 'Program Name',
     program_subtext: 'Initial-program',
     pathway_label: 'Pathway',
-    api_key_label: 'Key'
+    api_key_label: 'Key',
+    api_key_value: 'OPENAI_API_KEY'
   };
 }
 
@@ -237,35 +306,40 @@ function saveAppSettings(nextSettings) {
 let appSettings = loadAppSettings();
 
 function getActiveCheckpointsDir() {
-  return appSettings.checkpoints_dir || DEFAULTS.checkpointsDir;
+  return String(appSettings.checkpoints_dir || DEFAULTS.checkpointsDir || '').trim();
 }
 
 function getActiveConfigYamlPath() {
-  return appSettings.config_yaml_path || DEFAULTS.configYamlPath;
+  return String(appSettings.config_yaml_path || DEFAULTS.configYamlPath || '').trim();
 }
 
 function getActiveOpenEvolveLogsDir() {
-  return appSettings.openevolve_logs_dir || DEFAULTS.logsDir;
+  return String(appSettings.openevolve_logs_dir || DEFAULTS.logsDir || '').trim();
 }
 
-function validateNonEmptyPath(value, fieldName, missingLabel) {
+function validatePathOrAllowEmpty(value, fieldName, missingLabel) {
   const trimmed = String(value || '').trim();
 
   if (!trimmed) {
-    const error = new Error(`Please provide a non-empty ${fieldName}`);
+    return '';
+  }
+
+  if (fieldName === 'config_yaml_path') {
+    return ensureYamlFilePath(trimmed);
+  }
+
+  const resolved = path.isAbsolute(trimmed)
+    ? path.normalize(trimmed)
+    : path.resolve(__dirname, trimmed);
+
+  if (!pathExists(resolved)) {
+    const error = new Error(`Path does not exist: ${resolved}`);
     error.status = 400;
     error.code = missingLabel;
     throw error;
   }
 
-  if (!fs.existsSync(trimmed)) {
-    const error = new Error(`Path does not exist: ${trimmed}`);
-    error.status = 400;
-    error.code = missingLabel;
-    throw error;
-  }
-
-  return trimmed;
+  return resolved;
 }
 
 function applySettingIfPresent(nextSettings, body, key, validator) {
@@ -284,20 +358,19 @@ function applyTrimmedTextIfPresent(nextSettings, body, key) {
 ========================= */
 
 function readYamlConfig(configPath = getActiveConfigYamlPath()) {
-  ensureExists(configPath, 'Config YAML not found');
+  const finalPath = ensureYamlFilePath(configPath);
+  const parsed = YAML.parse(readTextFileSafe(finalPath));
 
-  const parsed = YAML.parse(readTextFile(configPath));
   if (!parsed || typeof parsed !== 'object') {
-    throw new Error(`Invalid YAML config: ${configPath}`);
+    throw new Error(`Invalid YAML config: ${finalPath}`);
   }
 
   return parsed;
 }
 
 function readYamlApiKey(configPath = getActiveConfigYamlPath()) {
-  ensureExists(configPath, 'Config YAML not found');
-
-  const raw = readTextFile(configPath);
+  const finalPath = ensureYamlFilePath(configPath);
+  const raw = readTextFileSafe(finalPath);
   const match = raw.match(/^\s*api_key:\s*(.+?)\s*$/m);
 
   if (!match) return '';
@@ -307,24 +380,30 @@ function readYamlApiKey(configPath = getActiveConfigYamlPath()) {
 }
 
 function writeYamlApiKey(configPath, nextApiKey) {
-  ensureExists(configPath, 'Config YAML not found');
-
-  const raw = readTextFile(configPath);
+  const finalPath = ensureYamlFilePath(configPath);
+  const raw = readTextFileSafe(finalPath);
   const replacementLine = `api_key: "${escapeYamlDoubleQuoted(nextApiKey)}"`;
 
   if (/^\s*api_key:\s*.+$/m.test(raw)) {
     writeTextFile(
-      configPath,
+      finalPath,
       raw.replace(/^\s*api_key:\s*.+$/m, replacementLine)
     );
     return;
   }
 
-  writeTextFile(configPath, `${raw.trimEnd()}\n${replacementLine}\n`);
+  writeTextFile(finalPath, `${raw.trimEnd()}\n${replacementLine}\n`);
 }
 
 function getConfigSummary() {
-  const configPath = getActiveConfigYamlPath();
+  const activeConfigPath = getActiveConfigYamlPath();
+  if (!activeConfigPath) {
+    const error = new Error('config_yaml_path is not set yet');
+    error.status = 400;
+    throw error;
+  }
+
+  const configPath = ensureYamlFilePath(activeConfigPath);
   const cfg = readYamlConfig(configPath);
 
   return {
@@ -380,6 +459,13 @@ function parseEvolutionInfo(infoPath, checkpointName) {
 
 function readOpenEvolveEvolutionRows() {
   const checkpointsDir = getActiveCheckpointsDir();
+
+  if (!checkpointsDir) {
+    const error = new Error('checkpoints_dir is not set yet');
+    error.status = 400;
+    throw error;
+  }
+
   const checkpointFolders = listCheckpointFolders(checkpointsDir);
   const evolutions = [];
 
@@ -423,6 +509,13 @@ function listOpenEvolveLogFiles(logsDir) {
 
 function readLatestOpenEvolveLog() {
   const logsDir = getActiveOpenEvolveLogsDir();
+
+  if (!logsDir) {
+    const error = new Error('openevolve_logs_dir is not set yet');
+    error.status = 400;
+    throw error;
+  }
+
   const files = listOpenEvolveLogFiles(logsDir);
 
   if (!files.length) {
@@ -620,7 +713,10 @@ app.get('/api/settings', (req, res) => {
   let yamlApiKey = '';
 
   try {
-    yamlApiKey = readYamlApiKey(getActiveConfigYamlPath());
+    const activeConfigPath = getActiveConfigYamlPath();
+    if (activeConfigPath) {
+      yamlApiKey = readYamlApiKey(activeConfigPath);
+    }
   } catch (error) {
     console.warn('[settings] failed to read YAML api_key:', error.message);
   }
@@ -630,7 +726,7 @@ app.get('/api/settings', (req, res) => {
     checkpoints_dir: getActiveCheckpointsDir(),
     config_yaml_path: getActiveConfigYamlPath(),
     openevolve_logs_dir: getActiveOpenEvolveLogsDir(),
-    api_key_value: yamlApiKey
+    api_key_value: yamlApiKey || appSettings.api_key_value || 'OPENAI_API_KEY'
   });
 });
 
@@ -640,15 +736,15 @@ app.post('/api/settings', async (req, res) => {
     const nextSettings = { ...appSettings };
 
     applySettingIfPresent(nextSettings, body, 'checkpoints_dir', value =>
-      validateNonEmptyPath(value, 'checkpoints_dir', 'Invalid checkpoint path')
+      validatePathOrAllowEmpty(value, 'checkpoints_dir', 'Invalid checkpoint path')
     );
 
     applySettingIfPresent(nextSettings, body, 'config_yaml_path', value =>
-      validateNonEmptyPath(value, 'config_yaml_path', 'Invalid config path')
+      validatePathOrAllowEmpty(value, 'config_yaml_path', 'Invalid config path')
     );
 
     applySettingIfPresent(nextSettings, body, 'openevolve_logs_dir', value =>
-      validateNonEmptyPath(value, 'openevolve_logs_dir', 'Invalid logs path')
+      validatePathOrAllowEmpty(value, 'openevolve_logs_dir', 'Invalid logs path')
     );
 
     applyTrimmedTextIfPresent(nextSettings, body, 'program_name');
@@ -657,8 +753,11 @@ app.post('/api/settings', async (req, res) => {
     applyTrimmedTextIfPresent(nextSettings, body, 'api_key_label');
 
     if (typeof body.api_key_value === 'string') {
+      nextSettings.api_key_value = body.api_key_value.trim();
       const targetConfigPath = nextSettings.config_yaml_path || getActiveConfigYamlPath();
-      writeYamlApiKey(targetConfigPath, body.api_key_value.trim());
+      if (String(targetConfigPath || '').trim()) {
+        writeYamlApiKey(targetConfigPath, body.api_key_value.trim());
+      }
     }
 
     appSettings = nextSettings;
@@ -666,14 +765,17 @@ app.post('/api/settings', async (req, res) => {
 
     let yamlApiKey = '';
     try {
-      yamlApiKey = readYamlApiKey(getActiveConfigYamlPath());
+      const activeConfigPath = getActiveConfigYamlPath();
+      if (activeConfigPath) {
+        yamlApiKey = readYamlApiKey(activeConfigPath);
+      }
     } catch (_) {}
 
     jsonOk(res, {
       message: 'Settings updated successfully',
       settings: {
         ...appSettings,
-        api_key_value: yamlApiKey
+        api_key_value: yamlApiKey || appSettings.api_key_value || 'OPENAI_API_KEY'
       }
     });
   } catch (error) {
@@ -766,7 +868,29 @@ app.get('/api/health', (req, res) => {
 app.post('/api/evaluation/raw-results', async (req, res) => {
   try {
     const body = req.body || {};
-    const resolvedRawResultsPath = resolveMaybeRelativePath(body.rawResultsPath);
+
+    let resolvedRawResultsPath = null;
+
+    if (body.rawResultsPath && String(body.rawResultsPath).trim()) {
+      resolvedRawResultsPath = resolveMaybeRelativePath(body.rawResultsPath);
+    } else {
+      resolvedRawResultsPath = firstExistingFile([
+        path.join(__dirname, 'data', 'raw_results.json'),
+        path.join(__dirname, 'assets', 'data', 'raw_results.json'),
+        path.join(__dirname, 'assets', 'UCT-benchmarking', 'data', 'raw_results.json'),
+        path.join(__dirname, 'assets', 'UNCORRELATED-TRACK-PROCESSING', 'data', 'raw_results.json')
+      ]);
+    }
+
+    if (!resolvedRawResultsPath) {
+      return jsonError(
+        res,
+        404,
+        'raw results load error',
+        'raw_results.json was not found in any expected location'
+      );
+    }
+
     const rawText = readTextFile(resolvedRawResultsPath);
 
     const sanitizedText = rawText
@@ -804,7 +928,8 @@ app.listen(APP.port, () => {
   console.log(`GET  /api/config`);
   console.log(`GET  /api/health`);
   console.log(`POST /api/evaluation/raw-results`);
-  console.log(`OpenEvolve checkpoints: ${getActiveCheckpointsDir()}`);
-  console.log(`OpenEvolve config YAML: ${getActiveConfigYamlPath()}`);
-  console.log(`OpenEvolve logs dir: ${getActiveOpenEvolveLogsDir()}`);
+  console.log(`Settings file: ${SETTINGS_FILE}`);
+  console.log(`OpenEvolve checkpoints: ${getActiveCheckpointsDir() || '[not set yet]'}`);
+  console.log(`OpenEvolve config YAML: ${getActiveConfigYamlPath() || '[not set yet]'}`);
+  console.log(`OpenEvolve logs dir: ${getActiveOpenEvolveLogsDir() || '[not set yet]'}`);
 });
