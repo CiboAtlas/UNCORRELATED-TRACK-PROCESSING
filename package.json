@@ -1,11 +1,14 @@
 {
   "name": "openevolve-evaluator-generator",
+  "productName": "OpenEvolve Analytics Console",
   "version": "1.0.0",
   "description": "AI-powered evaluator.py generator for OpenEvolve optimization problems",
-  "main": "server.js",
+  "main": "electron-main.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "desktop": "electron .",
+    "build": "electron-builder"
   },
   "keywords": [
     "openevolve",
@@ -26,6 +29,21 @@
     "yaml": "^2.8.3"
   },
   "devDependencies": {
+    "electron": "^41.1.1",
+    "electron-builder": "^26.8.1",
     "nodemon": "^3.0.2"
+  },
+  "build": {
+    "appId": "com.kg.openevolveanalytics",
+    "productName": "OpenEvolve Analytics Console",
+    "files": [
+      "**/*",
+      "!dist{,/**}",
+      "!build{,/**}",
+      "!node_modules/.cache{,/**}"
+    ],
+    "win": {
+      "target": "nsis"
+    }
   }
 }
