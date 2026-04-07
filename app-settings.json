@@ -1,7 +1,7 @@
 {
-  "checkpoints_dir": "C:\\Users\\kfg4s\\Downloads\\SENIOR DESIGN\\openevolve\\examples\\signal_processing\\openevolve_output\\checkpoints",
-  "config_yaml_path": "C:\\Users\\kfg4s\\Downloads\\SENIOR DESIGN\\openevolve\\examples\\signal_processing\\config.yaml",
-  "openevolve_logs_dir": "C:\\Users\\kfg4s\\Downloads\\SENIOR DESIGN\\openevolve\\examples\\signal_processing\\openevolve_output\\logs",
+  "checkpoints_dir": "",
+  "config_yaml_path": "",
+  "openevolve_logs_dir": "",
   "program_name": "Program Name",
   "program_subtext": "initial-program",
   "pathway_label": "Pathway",
