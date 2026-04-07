@@ -306,15 +306,24 @@ function saveAppSettings(nextSettings) {
 let appSettings = loadAppSettings();
 
 function getActiveCheckpointsDir() {
-  return String(appSettings.checkpoints_dir || DEFAULTS.checkpointsDir || '').trim();
+  if (Object.prototype.hasOwnProperty.call(appSettings, 'checkpoints_dir')) {
+    return String(appSettings.checkpoints_dir || '').trim();
+  }
+  return String(DEFAULTS.checkpointsDir || '').trim();
 }
 
 function getActiveConfigYamlPath() {
-  return String(appSettings.config_yaml_path || DEFAULTS.configYamlPath || '').trim();
+  if (Object.prototype.hasOwnProperty.call(appSettings, 'config_yaml_path')) {
+    return String(appSettings.config_yaml_path || '').trim();
+  }
+  return String(DEFAULTS.configYamlPath || '').trim();
 }
 
 function getActiveOpenEvolveLogsDir() {
-  return String(appSettings.openevolve_logs_dir || DEFAULTS.logsDir || '').trim();
+  if (Object.prototype.hasOwnProperty.call(appSettings, 'openevolve_logs_dir')) {
+    return String(appSettings.openevolve_logs_dir || '').trim();
+  }
+  return String(DEFAULTS.logsDir || '').trim();
 }
 
 function validatePathOrAllowEmpty(value, fieldName, missingLabel) {
