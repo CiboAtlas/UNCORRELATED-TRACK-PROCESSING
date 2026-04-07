@@ -1,0 +1,36 @@
+schema for output_dataset.json
+
+Information for observation/Elset (TLE)/ schemas can be found on UDL documentation
+https://unifieddatalibrary.com/storefront/#/api-docs
+At the bottom of the above link, at the bottom of the page, there is a dropdown box labeled 'schemas'
+Click this, then search for either OEObservation_Full for observation schema or Elset_Full for elset/TLE schema
+
+{
+  "dataset_obs" :   [list of observations, this is what is fed into the UCT processor to be evaluated. Each entry in this list has the same schema as EOObservation from UDL],
+  "dataset_elset" : [list of track TLEs, this is what is fed into the UCT processor to be evaluated. Currently this is a copy of dataset_obs but once the TLE functionality is implemented, each entry in this list should have the same schema as Elset from UDL],
+  "reference":      [list of reference objects in dataset, this is the answer key the UCTP output is evaluated against
+                    [{
+                      "satNo": NORAD ID of satellite,
+                      "xpos":  x-position of satellite [km],
+                      "ypos":  y-'''            ''',
+                      "zpos":  z-'''            ''',
+                      "xvel":  x-velocity of satellite [km/s],
+                      "yvel":  y-'''            ''',
+                      "zvel":  z-'''            ''', 
+                      "epoch": Time at which the above state vector is calculated,
+                      "cov": upper diagonal elements of state vector covariance matrix,
+                      "mass": satellite mass [kg] (needed for state vector propagation,
+                      "crossSection": cross-sectional area [m^2] (needed for state vector propagation),
+                      "dragCoeff": parameter not used,
+                      "solarRadPressCoeff": parameter not used,
+                      "line1": first line of TLE,
+                      "line2": second line of TLE,
+                      "groupedObsIds": [list of observations "id" that correspond to this reference object "satNo"]
+                      "groupedElsetIds": [list of Elset "Elsetid" that correspond to this reference object "satNo"]
+                     },
+                     {  
+                       ...
+                       ...
+                     }]
+}
+

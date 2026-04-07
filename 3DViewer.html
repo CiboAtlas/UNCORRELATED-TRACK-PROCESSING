@@ -1,0 +1,2047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3DViewer</title>
+  <style>
+    :root {
+      --bg: #030303;
+      --bg-soft: #0a0a0a;
+      --panel: rgba(8, 8, 8, 0.84);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text: rgba(238, 238, 238, 0.92);
+      --muted: rgba(176, 176, 176, 0.66);
+      --white: #f5f5f5;
+      --line: rgba(255, 255, 255, 0.16);
+
+      --ref: #d7d7d7;
+      --ref-dim: #707070;
+      --uct: #b8b8b8;
+      --uct-dim: #666666;
+      --obs: #9a9a9a;
+      --shared: #f0f0f0;
+      --selected: #ffffff;
+      --sensor: #8a8a8a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(255,255,255,0.03), transparent 24%),
+        linear-gradient(to bottom, #020202 0%, #060606 100%);
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+    }
+
+    #app {
+      position: fixed;
+      inset: 0;
+      cursor: grab;
+      z-index: 1;
+    }
+
+    #app.dragging {
+      cursor: grabbing;
+    }
+
+    .hud {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .panel {
+      position: absolute;
+      border: 1px solid var(--panel-border);
+      background:
+        linear-gradient(to bottom, rgba(14,14,14,0.86), rgba(7,7,7,0.84));
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.02) inset,
+        0 16px 36px rgba(0,0,0,0.28);
+      backdrop-filter: blur(10px);
+      pointer-events: auto;
+    }
+
+    .top-left {
+      top: 24px;
+      left: 24px;
+      width: 350px;
+      height: 554px;
+      padding: 16px 16px 14px;
+      overflow: auto;
+    }
+
+    .top-right {
+      top: 24px;
+      right: 24px;
+      width: 285px;
+      height: 142px;
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    .bottom-left {
+      left: 24px;
+      top: 580px;
+      bottom: 24px;
+      width: 350px;
+      padding: 16px;
+      overflow: auto;
+    }
+
+    .right-list {
+      top: 170px;
+      right: 24px;
+      bottom: 220px;
+      width: 285px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .bottom-right {
+      right: 24px;
+      bottom: 24px;
+      width: 285px;
+      height: 180px;
+      padding: 14px;
+      overflow: auto;
+    }
+
+    .bottom-center {
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 24px;
+      width: 520px;
+      padding: 10px 14px;
+      text-align: center;
+    }
+
+    .brand-wrap {
+      border-top: 1px solid rgba(255,255,255,0.24);
+      padding-top: 12px;
+    }
+
+    .brand {
+      font-size: 26px;
+      font-weight: 300;
+      letter-spacing: 1px;
+      color: var(--white);
+      text-transform: uppercase;
+    }
+
+    .brand span {
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: #d2d2d2;
+    }
+
+    .sub {
+      margin-top: 8px;
+      font-size: 10px;
+      letter-spacing: 4px;
+      line-height: 1.4;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .label {
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: rgba(215,215,215,0.78);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .value {
+      font-size: 13px;
+      line-height: 1.62;
+      color: var(--text);
+      white-space: pre-line;
+      word-break: break-word;
+    }
+
+    .tiny {
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .mode-text {
+      color: var(--white);
+      font-weight: 700;
+      letter-spacing: 3px;
+    }
+
+    .controls-hint {
+      margin-top: 10px;
+      font-size: 10px;
+      letter-spacing: 1.3px;
+      text-transform: uppercase;
+      line-height: 1.55;
+      color: rgba(194,194,194,0.78);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.03);
+      color: var(--white);
+      padding: 7px 12px;
+      font-size: 11px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: 0.16s ease;
+    }
+
+    .btn:hover {
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.20);
+    }
+
+    .btn.active {
+      background: rgba(255,255,255,0.10);
+      border-color: rgba(255,255,255,0.30);
+    }
+
+    .btn.small {
+      padding: 5px 10px;
+      font-size: 10px;
+    }
+
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: auto;
+      min-height: 0;
+      padding-right: 4px;
+    }
+
+    .item {
+      appearance: none;
+      width: 100%;
+      text-align: left;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.025);
+      color: var(--text);
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: 0.16s ease;
+    }
+
+    .item:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.16);
+    }
+
+    .item.active {
+      border-color: rgba(255,255,255,0.30);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .item-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 4px;
+      letter-spacing: 0.4px;
+    }
+
+    .item-sub {
+      font-size: 11px;
+      letter-spacing: 0.8px;
+      line-height: 1.45;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .pill-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+
+    .swatch {
+      width: 9px;
+      height: 9px;
+      display: inline-block;
+      border-radius: 50%;
+    }
+
+    .legend-note {
+      font-size: 10px;
+      line-height: 1.55;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
+    .scanlines {
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255,255,255,0.00) 0px,
+          rgba(255,255,255,0.00) 2px,
+          rgba(255,255,255,0.010) 3px,
+          rgba(255,255,255,0.010) 4px
+        );
+      mix-blend-mode: screen;
+      opacity: 0.18;
+      pointer-events: none;
+    }
+
+    .vignette {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at center,
+          rgba(0,0,0,0) 42%,
+          rgba(0,0,0,0.18) 72%,
+          rgba(0,0,0,0.62) 100%);
+      pointer-events: none;
+    }
+
+    .crosshair {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 34px;
+      height: 34px;
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .crosshair::before,
+    .crosshair::after {
+      content: "";
+      position: absolute;
+      background: rgba(255,255,255,0.16);
+    }
+
+    .crosshair::before {
+      left: 50%;
+      top: -10px;
+      transform: translateX(-50%);
+      width: 1px;
+      height: 54px;
+    }
+
+    .crosshair::after {
+      top: 50%;
+      left: -10px;
+      transform: translateY(-50%);
+      width: 54px;
+      height: 1px;
+    }
+
+    .welcome-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,0.03), transparent 26%),
+        linear-gradient(to bottom, rgba(0,0,0,0.08), rgba(0,0,0,0.52)),
+        #010101;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+
+    .welcome-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .welcome-shell {
+      position: absolute;
+      inset: 0;
+      padding: 38px 40px;
+      color: #f5f5f5;
+    }
+
+    .welcome-topline {
+      position: absolute;
+      left: 40px;
+      right: 40px;
+      top: 66px;
+      height: 1px;
+      background: rgba(255,255,255,0.52);
+    }
+
+    .welcome-topmeta {
+      position: absolute;
+      left: 40px;
+      right: 130px;
+      top: 70px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      letter-spacing: 1.3px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.84);
+    }
+
+    .welcome-brand {
+      position: absolute;
+      left: 40px;
+      top: 82px;
+      font-size: 26px;
+      font-weight: 300;
+      color: #f4f4f4;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      z-index: 2;
+    }
+
+    .welcome-brand strong {
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .welcome-globe-shell {
+      position: absolute;
+      left: 50%;
+      top: 55%;
+      transform: translate(-50%, -50%);
+      width: 470px;
+      height: 470px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,0.06), rgba(255,255,255,0.01) 58%, rgba(255,255,255,0.00) 74%);
+      box-shadow:
+        0 0 60px rgba(255,255,255,0.04),
+        0 0 120px rgba(255,255,255,0.02);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: visible;
+    }
+
+    .welcome-ring-outer,
+    .welcome-ring-inner {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .welcome-ring-outer {
+      inset: 8px;
+      border: 2px solid rgba(255,255,255,0.54);
+      box-shadow:
+        0 0 0 7px rgba(255,255,255,0.03),
+        0 0 0 12px rgba(255,255,255,0.015);
+    }
+
+    .welcome-ring-inner {
+      inset: 24px;
+      border: 1px solid rgba(255,255,255,0.16);
+    }
+
+    .welcome-orbit-light {
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 5;
+    }
+
+    .welcome-orbit-light::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border-top: 4px solid rgba(198, 228, 255, 0.98);
+      border-right: 4px solid rgba(150, 205, 255, 0.82);
+      border-bottom: 4px solid rgba(98, 170, 255, 0.10);
+      border-left: 4px solid rgba(98, 170, 255, 0.10);
+      box-shadow:
+        0 0 10px rgba(190, 225, 255, 0.95),
+        0 0 22px rgba(135, 200, 255, 0.82),
+        0 0 42px rgba(110, 185, 255, 0.55);
+      transform: rotate(-35deg);
+    }
+
+    .welcome-globe-shell.entering .welcome-orbit-light {
+      opacity: 1;
+      animation: orbitSweep 1.65s ease-in-out forwards;
+    }
+
+    .welcome-globe-shell.entering .welcome-earth {
+      box-shadow:
+        inset 0 0 120px rgba(0,0,0,0.28),
+        0 0 0 1px rgba(255,255,255,0.06),
+        0 0 16px rgba(190, 225, 255, 0.26),
+        0 0 34px rgba(135, 200, 255, 0.18);
+    }
+
+    @keyframes orbitSweep {
+      0% {
+        transform: rotate(0deg);
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      85% {
+        transform: rotate(360deg);
+        opacity: 1;
+      }
+      100% {
+        transform: rotate(420deg);
+        opacity: 0;
+      }
+    }
+
+    .welcome-earth {
+      width: 392px;
+      height: 392px;
+      border-radius: 50%;
+      overflow: hidden;
+      position: relative;
+      z-index: 2;
+      box-shadow:
+        inset 0 0 120px rgba(0,0,0,0.28),
+        0 0 0 1px rgba(255,255,255,0.06);
+      background: #000;
+    }
+
+    .welcome-earth-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 50%;
+      transform: scale(1.02);
+      filter: contrast(1.04) brightness(0.98) saturate(0.96);
+    }
+
+    .welcome-actions {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 96px;
+      display: flex;
+      gap: 10px;
+      z-index: 2;
+    }
+
+    .welcome-btn {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.04);
+      color: #f5f5f5;
+      padding: 11px 16px;
+      font-size: 11px;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+
+    .welcome-btn:hover {
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(255,255,255,0.30);
+    }
+
+    .welcome-btn.primary {
+      background: rgba(255,255,255,0.10);
+      border-color: rgba(255,255,255,0.30);
+    }
+
+    .welcome-mini {
+      position: absolute;
+      left: 40px;
+      top: 30px;
+      width: 10px;
+      height: 10px;
+      border: 2px solid rgba(255,255,255,0.88);
+      border-radius: 50%;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06);
+    }
+
+    .welcome-mini::after {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 10px;
+      width: 2px;
+      height: 6px;
+      background: rgba(255,255,255,0.88);
+    }
+
+    .field-group {
+      margin-bottom: 10px;
+    }
+
+    .field-label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .path-input {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.03);
+      color: var(--white);
+      padding: 8px 10px;
+      font-size: 11px;
+      outline: none;
+    }
+
+    .path-input:focus {
+      border-color: rgba(255,255,255,0.24);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .status-text {
+      margin-top: 8px;
+      font-size: 10px;
+      line-height: 1.45;
+      color: var(--muted);
+      white-space: pre-line;
+    }
+
+    @media (max-width: 1200px) {
+      .top-left, .bottom-left {
+        width: 320px;
+      }
+
+      .top-right, .right-list, .bottom-right {
+        width: 260px;
+      }
+
+      .bottom-center {
+        width: 460px;
+      }
+
+      .welcome-brand {
+        left: 34px;
+      }
+
+      .welcome-topline {
+        left: 34px;
+        right: 34px;
+      }
+
+      .welcome-topmeta,
+      .welcome-actions {
+        left: 390px;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .top-right,
+      .right-list,
+      .bottom-right {
+        display: none;
+      }
+
+      .top-left,
+      .bottom-left {
+        width: 320px;
+      }
+
+      .bottom-center {
+        width: 420px;
+      }
+
+      .welcome-brand {
+        left: 28px;
+        top: 70px;
+        font-size: 22px;
+      }
+
+      .welcome-topline {
+        left: 28px;
+        right: 28px;
+      }
+
+      .welcome-topmeta {
+        left: 28px;
+        right: 28px;
+        top: 50px;
+      }
+
+      .welcome-actions {
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 60px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="welcomeOverlay" class="welcome-overlay">
+   <div class="welcome-shell">
+    <a
+      href="index.html"
+      style="
+        position:absolute;
+        top:34px;
+        left:34px;
+        z-index:3;
+        color:rgba(255,255,255,0.84);
+        text-decoration:none;
+        font-size:10px;
+        letter-spacing:1.3px;
+        text-transform:uppercase;
+        font-family:Arial, Helvetica, sans-serif;
+      "
+    >← Return to Dashboard
+  </a>
+   <div class="welcome-topline"></div>
+
+      <div class="welcome-topmeta">
+        <div>Space Domain Awareness Tools, Applications, and Processes Lab</div>
+        <div>COPYRIGHT<br>
+        ©2026<br>
+        PALANTIR<br>
+        TECHNOLOGIES<br></div>
+      </div>
+
+      <div class="welcome-brand">
+        <strong>3DView</strong> [Beta 1.0]
+      </div>
+
+      <div class="welcome-globe-shell">
+        <div class="welcome-ring-outer"></div>
+        <div class="welcome-ring-inner"></div>
+        <div class="welcome-orbit-light"></div>
+        <div class="welcome-earth">
+          <img
+            id="welcomeEarthImage"
+            class="welcome-earth-image"
+            src="./assets/images/welcome-earth.png"
+            alt="Earth"
+          />
+        </div>
+      </div>
+
+      <div class="welcome-actions">
+        <button id="enterAppBtn" class="welcome-btn primary">Enter Application</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="hud">
+    <div class="panel top-left">
+    <a
+    href="index.html"
+    style="
+      display:inline-block;
+      margin-bottom:8px;
+      color:rgba(255,255,255,0.84);
+      text-decoration:none;
+      font-size:10px;
+      letter-spacing:1.3px;
+      text-transform:uppercase;
+      font-family:Arial, Helvetica, sans-serif;
+    "
+  >← Return to Dashboard
+    </a>
+      <div class="brand-wrap">
+        <div class="brand">3D<span>Viewer</span></div>
+        <div class="sub">Reference / UCT / Obs Visualizer</div>
+      </div>
+
+      <div style="height:10px"></div>
+      <div class="label">View Modes</div>
+      <div class="toolbar" id="modeToolbar">
+        <button class="btn" data-mode="obs">OBS</button>
+        <button class="btn active" data-mode="ref">REF</button>
+        <button class="btn" data-mode="uct">UCT Output</button>
+        <button class="btn" data-mode="compare">Compare</button>
+      </div>
+
+      <div style="height:14px"></div>
+      <div class="label">Track Summary</div>
+      <div id="summary" class="value">Booting...</div>
+
+      <div class="controls-hint">
+        Drag rotate · wheel zoom · click satellite for info · space play/pause · ← → step · R reset · 1 obs · 2 ref · 3 uct · 4 compare
+      </div>
+
+      <div class="pill-row">
+        <span class="pill"><span class="swatch" style="background:#d7d7d7"></span> Reference</span>
+        <span class="pill"><span class="swatch" style="background:#b8b8b8"></span> UCT Output</span>
+        <span class="pill"><span class="swatch" style="background:#f0f0f0"></span> Shared Obs</span>
+        <span class="pill"><span class="swatch" style="background:#ffffff"></span> Selected</span>
+      </div>
+    </div>
+
+    <div class="panel top-right">
+      <div class="tiny">Active Style</div>
+      <div class="brand" style="font-size:24px; letter-spacing:4px;">C<span>R</span>T</div>
+      <div style="height:18px"></div>
+      <div class="label">Record</div>
+      <div id="record" class="value">--</div>
+    </div>
+
+    <div class="panel bottom-left">
+      <div class="label">Details</div>
+      <div id="details" class="value">--</div>
+    </div>
+
+    <div class="panel right-list">
+      <div class="list-header">
+        <div>
+          <div class="label" style="margin-bottom:4px;">Object / Group List</div>
+          <div id="listSubtitle" class="tiny">Loading...</div>
+        </div>
+        <div class="toolbar" style="margin-top:0;">
+          <button id="prevBtn" class="btn small">Prev</button>
+          <button id="nextBtn" class="btn small">Next</button>
+        </div>
+      </div>
+
+      <div id="objectList" class="list"></div>
+
+      <div id="legendNote" class="legend-note">
+        Click a marker in the globe or choose an item here.
+      </div>
+    </div>
+
+    <div class="panel bottom-right">
+      <div class="label">Data Source</div>
+
+      <div class="field-group">
+        <label class="field-label" for="datasetPathInput">Dataset JSON Path</label>
+        <input
+          id="datasetPathInput"
+          class="path-input"
+          type="text"
+          spellcheck="false"
+          value="./assets/UCT-benchmarking/data/dataset_10Objects.json"
+        />
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="uctPathInput">UCT Output JSON Path</label>
+        <input
+          id="uctPathInput"
+          class="path-input"
+          type="text"
+          spellcheck="false"
+          value="./assets/UCT-benchmarking/data/uctp_output.json"
+        />
+      </div>
+
+      <div class="toolbar" style="margin-top:8px;">
+        <button id="reloadDataBtn" class="btn">Reload Data</button>
+      </div>
+
+      <div id="dataSourceStatus" class="status-text">
+        Enter relative or server-served paths, then reload.
+      </div>
+    </div>
+
+    <div class="panel bottom-center">
+      <div class="tiny">Style Preset</div>
+      <div style="margin-top:6px; font-size:13px; letter-spacing:4px;">
+        MODE <span id="modeText" class="mode-text">REFERENCE</span>
+      </div>
+    </div>
+
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+    <div class="crosshair"></div>
+  </div>
+
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script>
+    (() => {
+      'use strict';
+
+      let DATASET_PATH = './assets/UCT-benchmarking/data/dataset_10Objects.json';
+      let UCTP_OUTPUT_PATH = './assets/UCT-benchmarking/data/uctp_output.json';
+
+      const EARTH_RADIUS_KM = 6371;
+      const EARTH_RENDER_RADIUS = 10.0;
+      const SCALE = EARTH_RENDER_RADIUS / EARTH_RADIUS_KM;
+
+      const MODE = {
+        OBS: 'obs',
+        REF: 'ref',
+        UCT: 'uct',
+        COMPARE: 'compare'
+      };
+
+      const COLOR = {
+        sensor: 0x8a8a8a,
+        obs: 0x979797,
+        obsActive: 0xffffff,
+        ref: 0xd7d7d7,
+        refDim: 0x707070,
+        uct: 0xb8b8b8,
+        uctDim: 0x666666,
+        shared: 0xf0f0f0,
+        missed: 0xcfcfcf,
+        extra: 0x969696,
+        selected: 0xffffff,
+        white: 0xffffff
+      };
+
+      const app = document.getElementById('app');
+      const summaryEl = document.getElementById('summary');
+      const recordEl = document.getElementById('record');
+      const detailsEl = document.getElementById('details');
+      const objectListEl = document.getElementById('objectList');
+      const listSubtitleEl = document.getElementById('listSubtitle');
+      const legendNoteEl = document.getElementById('legendNote');
+      const modeTextEl = document.getElementById('modeText');
+      const modeToolbar = document.getElementById('modeToolbar');
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const welcomeOverlay = document.getElementById('welcomeOverlay');
+      const enterAppBtn = document.getElementById('enterAppBtn');
+      const welcomeGlobeShell = document.querySelector('.welcome-globe-shell');
+
+      const datasetPathInput = document.getElementById('datasetPathInput');
+      const uctPathInput = document.getElementById('uctPathInput');
+      const reloadDataBtn = document.getElementById('reloadDataBtn');
+      const dataSourceStatusEl = document.getElementById('dataSourceStatus');
+
+      let scene, camera, renderer, earthGroup, stars;
+      let currentMode = MODE.REF;
+      let currentSelectionIndex = 0;
+
+      let cameraYaw = 0.0;
+      let cameraPitch = 0.28;
+      let cameraRadius = 24;
+      const cameraTarget = new THREE.Vector3(0, 0, 0);
+
+      let isDragging = false;
+      let lastPointerX = 0;
+      let lastPointerY = 0;
+
+      let isPlaying = false;
+      let lastStepMs = 0;
+      const STEP_INTERVAL_MS = 1200;
+      let welcomeAnimating = false;
+
+      let datasetJson = null;
+      let uctpJson = null;
+
+      let obsRows = [];
+      let refRows = [];
+      let uctRows = [];
+      let obsById = new Map();
+      let comparePairs = [];
+
+      let visualRoot = null;
+      let raycaster = null;
+      let pointer = null;
+      let clickableObjects = [];
+
+      function num(v, fallback = 0) {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : fallback;
+      }
+
+      function sanitizeJsonText(text) {
+        return text.replace(/:\s*NaN(\s*[,}\]])/g, ': null$1');
+      }
+
+      async function loadJson(path) {
+        const res = await fetch(path, { cache: 'no-store' });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status} while loading ${path}`);
+        }
+        const raw = await res.text();
+        return JSON.parse(sanitizeJsonText(raw));
+      }
+
+      function formatTime(ts) {
+        const d = new Date(ts);
+        if (Number.isNaN(d.getTime())) return String(ts ?? '--');
+        return d.toISOString().replace('T', ' ').replace('Z', ' UTC');
+      }
+
+      function latLonAltToECEF(latDeg, lonDeg, altKm) {
+        const lat = THREE.MathUtils.degToRad(latDeg);
+        const lon = THREE.MathUtils.degToRad(lonDeg);
+        const r = EARTH_RADIUS_KM + altKm;
+
+        const x = r * Math.cos(lat) * Math.cos(lon);
+        const y = r * Math.sin(lat);
+        const z = -r * Math.cos(lat) * Math.sin(lon);
+
+        return new THREE.Vector3(x, y, z);
+      }
+
+      function enuBasis(latDeg, lonDeg) {
+        const lat = THREE.MathUtils.degToRad(latDeg);
+        const lon = THREE.MathUtils.degToRad(lonDeg);
+
+        const east = new THREE.Vector3(
+          -Math.sin(lon),
+          0,
+          -Math.cos(lon)
+        ).normalize();
+
+        const north = new THREE.Vector3(
+          -Math.sin(lat) * Math.cos(lon),
+          Math.cos(lat),
+          Math.sin(lat) * Math.sin(lon)
+        ).normalize();
+
+        const up = new THREE.Vector3(
+          Math.cos(lat) * Math.cos(lon),
+          Math.sin(lat),
+          -Math.cos(lat) * Math.sin(lon)
+        ).normalize();
+
+        return { east, north, up };
+      }
+
+      function azElRangeToECEF(latDeg, lonDeg, altKm, azDeg, elDeg, rangeKm) {
+        const sensor = latLonAltToECEF(latDeg, lonDeg, altKm);
+        const basis = enuBasis(latDeg, lonDeg);
+
+        const az = THREE.MathUtils.degToRad(azDeg);
+        const el = THREE.MathUtils.degToRad(elDeg);
+
+        const e = Math.cos(el) * Math.sin(az);
+        const n = Math.cos(el) * Math.cos(az);
+        const u = Math.sin(el);
+
+        const los = new THREE.Vector3()
+          .addScaledVector(basis.east, e)
+          .addScaledVector(basis.north, n)
+          .addScaledVector(basis.up, u)
+          .normalize();
+
+        return sensor.add(los.multiplyScalar(rangeKm));
+      }
+
+      function kmToRender(v) {
+        return v.clone().multiplyScalar(SCALE);
+      }
+
+      function distanceKm(a, b) {
+        return Math.sqrt(
+          Math.pow(num(a.xpos) - num(b.xpos), 2) +
+          Math.pow(num(a.ypos) - num(b.ypos), 2) +
+          Math.pow(num(a.zpos) - num(b.zpos), 2)
+        );
+      }
+
+      function makeMarker(position, color, size, opacity = 1) {
+        const mesh = new THREE.Mesh(
+          new THREE.SphereGeometry(size, 18, 18),
+          new THREE.MeshBasicMaterial({
+            color,
+            transparent: opacity < 1,
+            opacity
+          })
+        );
+        mesh.position.copy(position);
+        return mesh;
+      }
+
+      function makeLine(points, color, opacity) {
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        const material = new THREE.LineBasicMaterial({
+          color,
+          transparent: true,
+          opacity
+        });
+        return new THREE.Line(geometry, material);
+      }
+
+      function makeEarth() {
+        const group = new THREE.Group();
+
+        const earth = new THREE.Mesh(
+          new THREE.SphereGeometry(EARTH_RENDER_RADIUS, 64, 64),
+          new THREE.MeshPhongMaterial({
+            color: 0x232323,
+            emissive: 0x0b0b0b,
+            shininess: 18,
+            specular: 0x4a4a4a
+          })
+        );
+        group.add(earth);
+
+        const wire = new THREE.Mesh(
+          new THREE.SphereGeometry(EARTH_RENDER_RADIUS * 1.002, 32, 32),
+          new THREE.MeshBasicMaterial({
+            color: 0x707070,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.12
+          })
+        );
+        group.add(wire);
+
+        const glow = new THREE.Mesh(
+          new THREE.SphereGeometry(EARTH_RENDER_RADIUS * 1.05, 32, 32),
+          new THREE.MeshBasicMaterial({
+            color: 0x404040,
+            transparent: true,
+            opacity: 0.07
+          })
+        );
+        group.add(glow);
+
+        return group;
+      }
+
+      function makeStars() {
+        const count = 2200;
+        const positions = new Float32Array(count * 3);
+
+        for (let i = 0; i < count; i++) {
+          const r = 140 + Math.random() * 260;
+          const theta = Math.random() * Math.PI * 2;
+          const phi = Math.acos(2 * Math.random() - 1);
+
+          positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+          positions[i * 3 + 1] = r * Math.cos(phi);
+          positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        return new THREE.Points(
+          geometry,
+          new THREE.PointsMaterial({
+            color: 0x8e8e8e,
+            size: 0.5,
+            transparent: true,
+            opacity: 0.42
+          })
+        );
+      }
+
+      function initScene() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x020202);
+
+        camera = new THREE.PerspectiveCamera(
+          50,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          3000
+        );
+        camera.position.set(0, 8, 18);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        app.appendChild(renderer.domElement);
+
+        raycaster = new THREE.Raycaster();
+        pointer = new THREE.Vector2();
+
+        const ambient = new THREE.AmbientLight(0xb0b0b0, 1.08);
+        scene.add(ambient);
+
+        const dir1 = new THREE.DirectionalLight(0xe0e0e0, 0.86);
+        dir1.position.set(14, 8, 10);
+        scene.add(dir1);
+
+        const dir2 = new THREE.DirectionalLight(0x7a7a7a, 0.24);
+        dir2.position.set(-15, -3, -9);
+        scene.add(dir2);
+
+        stars = makeStars();
+        scene.add(stars);
+
+        earthGroup = makeEarth();
+        scene.add(earthGroup);
+
+        visualRoot = new THREE.Group();
+        scene.add(visualRoot);
+
+        setupInput();
+        window.addEventListener('resize', onResize);
+      }
+
+      function setupInput() {
+        app.addEventListener('pointerdown', (event) => {
+          isDragging = true;
+          lastPointerX = event.clientX;
+          lastPointerY = event.clientY;
+          app.classList.add('dragging');
+        });
+
+        window.addEventListener('pointerup', () => {
+          isDragging = false;
+          app.classList.remove('dragging');
+        });
+
+        window.addEventListener('pointermove', (event) => {
+          if (!isDragging) return;
+
+          const dx = event.clientX - lastPointerX;
+          const dy = event.clientY - lastPointerY;
+
+          lastPointerX = event.clientX;
+          lastPointerY = event.clientY;
+
+          cameraYaw -= dx * 0.006;
+          cameraPitch += dy * 0.006;
+
+          const maxPitch = Math.PI / 2 - 0.08;
+          const minPitch = -Math.PI / 2 + 0.08;
+          cameraPitch = Math.max(minPitch, Math.min(maxPitch, cameraPitch));
+        });
+
+        app.addEventListener('wheel', (event) => {
+          event.preventDefault();
+          cameraRadius += event.deltaY * 0.015;
+          cameraRadius = Math.max(11, Math.min(34, cameraRadius));
+        }, { passive: false });
+
+        app.addEventListener('click', onCanvasClick);
+
+        window.addEventListener('keydown', (event) => {
+          const key = event.key.toLowerCase();
+
+          if (event.code === 'Space') {
+            event.preventDefault();
+            if (!welcomeOverlay.classList.contains('hidden')) {
+              dismissWelcome(true);
+            } else {
+              isPlaying = !isPlaying;
+            }
+          } else if (key === 'r') {
+            currentSelectionIndex = 0;
+            renderAll();
+          } else if (key === '1') {
+            setMode(MODE.OBS);
+          } else if (key === '2') {
+            setMode(MODE.REF);
+          } else if (key === '3') {
+            setMode(MODE.UCT);
+          } else if (key === '4') {
+            setMode(MODE.COMPARE);
+          } else if (event.key === 'ArrowRight') {
+            stepSelection(1);
+          } else if (event.key === 'ArrowLeft') {
+            stepSelection(-1);
+          } else if (key === 'enter' && !welcomeOverlay.classList.contains('hidden')) {
+            dismissWelcome(true);
+          }
+        });
+
+        modeToolbar.addEventListener('click', (event) => {
+          const btn = event.target.closest('.btn[data-mode]');
+          if (!btn) return;
+          setMode(btn.dataset.mode);
+        });
+
+        prevBtn.addEventListener('click', () => stepSelection(-1));
+        nextBtn.addEventListener('click', () => stepSelection(1));
+
+        enterAppBtn.addEventListener('click', () => {
+          dismissWelcome(true);
+        });
+
+        reloadDataBtn.addEventListener('click', async () => {
+          await reloadDataFromInputs();
+        });
+
+        datasetPathInput.addEventListener('keydown', async (event) => {
+          if (event.key === 'Enter') {
+            await reloadDataFromInputs();
+          }
+        });
+
+        uctPathInput.addEventListener('keydown', async (event) => {
+          if (event.key === 'Enter') {
+            await reloadDataFromInputs();
+          }
+        });
+      }
+
+      function dismissWelcome(withAnimation = false) {
+        if (welcomeOverlay.classList.contains('hidden')) return;
+
+        if (!withAnimation) {
+          welcomeOverlay.classList.add('hidden');
+          return;
+        }
+
+        if (welcomeAnimating) return;
+        welcomeAnimating = true;
+
+        if (enterAppBtn) {
+          enterAppBtn.disabled = true;
+        }
+
+        if (welcomeGlobeShell) {
+          welcomeGlobeShell.classList.remove('entering');
+          void welcomeGlobeShell.offsetWidth;
+          welcomeGlobeShell.classList.add('entering');
+        }
+
+        window.setTimeout(() => {
+          welcomeOverlay.classList.add('hidden');
+          if (welcomeGlobeShell) {
+            welcomeGlobeShell.classList.remove('entering');
+          }
+        }, 1700);
+      }
+
+      function onCanvasClick(event) {
+        if (!clickableObjects.length) return;
+
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(pointer, camera);
+        const intersections = raycaster.intersectObjects(clickableObjects, false);
+        if (!intersections.length) return;
+
+        const hit = intersections[0].object;
+        const idx = Number(hit.userData.selectionIndex);
+        if (Number.isFinite(idx)) {
+          currentSelectionIndex = idx;
+          renderAll();
+        }
+      }
+
+      function onResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      function normalizeDatasetObs() {
+        const arr = Array.isArray(datasetJson?.dataset_obs) ? datasetJson.dataset_obs : [];
+        return arr
+          .filter(row => row && row.id && row.obTime)
+          .map(row => {
+            const sensorECEF = latLonAltToECEF(num(row.senlat), num(row.senlon), num(row.senalt));
+            const obsECEF = azElRangeToECEF(
+              num(row.senlat), num(row.senlon), num(row.senalt),
+              num(row.azimuth), num(row.elevation), num(row.range)
+            );
+
+            return {
+              ...row,
+              sensorId: String(row.idSensor ?? 'UNKNOWN'),
+              sensorPos: kmToRender(sensorECEF),
+              obsPos: kmToRender(obsECEF)
+            };
+          })
+          .sort((a, b) => new Date(a.obTime) - new Date(b.obTime));
+      }
+
+      function normalizeReference() {
+        const arr = Array.isArray(datasetJson?.reference) ? datasetJson.reference : [];
+        return arr
+          .filter(row => row && row.epoch != null && row.xpos != null && row.ypos != null && row.zpos != null)
+          .map((row, index) => ({
+            ...row,
+            index,
+            renderPos: kmToRender(new THREE.Vector3(num(row.xpos), num(row.ypos), num(row.zpos))),
+            groupedObsIds: Array.isArray(row.groupedObsIds) ? row.groupedObsIds : [],
+            groupedElsetIds: Array.isArray(row.groupedElsetIds) ? row.groupedElsetIds : []
+          }))
+          .sort((a, b) => new Date(a.epoch) - new Date(b.epoch));
+      }
+
+      function normalizeUctp() {
+        const arr = Array.isArray(uctpJson) ? uctpJson : [];
+        return arr
+          .filter(row => row && row.epoch != null && row.xpos != null && row.ypos != null && row.zpos != null)
+          .map((row, index) => ({
+            ...row,
+            index,
+            renderPos: kmToRender(new THREE.Vector3(num(row.xpos), num(row.ypos), num(row.zpos))),
+            sourcedData: Array.isArray(row.sourcedData) ? row.sourcedData : [],
+            sourcedDataTypes: Array.isArray(row.sourcedDataTypes) ? row.sourcedDataTypes : []
+          }))
+          .sort((a, b) => new Date(a.epoch) - new Date(b.epoch));
+      }
+
+      function buildLookups() {
+        obsById = new Map();
+        for (const row of obsRows) {
+          obsById.set(row.id, row);
+        }
+      }
+
+      function buildComparePairs() {
+        comparePairs = refRows.map((ref, refIndex) => {
+          const refSet = new Set(ref.groupedObsIds);
+          let best = null;
+
+          for (let i = 0; i < uctRows.length; i++) {
+            const out = uctRows[i];
+            const outSet = new Set(out.sourcedData);
+
+            let shared = 0;
+            for (const id of refSet) {
+              if (outSet.has(id)) shared += 1;
+            }
+
+            const union = refSet.size + outSet.size - shared;
+            const score = union > 0 ? shared / union : 0;
+
+            if (!best || score > best.score) {
+              best = { refIndex, uctIndex: i, shared, union, score };
+            }
+          }
+
+          return best || { refIndex, uctIndex: -1, shared: 0, union: refSet.size, score: 0 };
+        });
+      }
+
+      function getObsSensorGroups() {
+        const map = new Map();
+        for (const obs of obsRows) {
+          if (!map.has(obs.sensorId)) map.set(obs.sensorId, []);
+          map.get(obs.sensorId).push(obs);
+        }
+
+        return [...map.entries()].map(([sensorId, rows]) => ({
+          key: sensorId,
+          title: sensorId,
+          subtitle: `${rows.length} observations`,
+          rows
+        }));
+      }
+
+      function getRefItems() {
+        return refRows.map((ref, index) => ({
+          key: `ref-${index}`,
+          title: `SAT ${ref.satNo ?? '--'}`,
+          subtitle: `${ref.groupedObsIds.length} grouped obs`,
+          ref,
+          index
+        }));
+      }
+
+      function getUctItems() {
+        return uctRows.map((out, index) => ({
+          key: `uct-${index}`,
+          title: `UCT ${out.idStateVector ?? index}`,
+          subtitle: `${out.sourcedData.length} sourced obs`,
+          out,
+          index
+        }));
+      }
+
+      function getCompareItems() {
+        return comparePairs.map((pair, index) => {
+          const ref = refRows[pair.refIndex];
+          const out = pair.uctIndex >= 0 ? uctRows[pair.uctIndex] : null;
+          return {
+            key: `cmp-${index}`,
+            title: `SAT ${ref?.satNo ?? '--'} ↔ UCT ${out?.idStateVector ?? '--'}`,
+            subtitle: `shared ${pair.shared} · score ${(pair.score * 100).toFixed(1)}%`,
+            pair,
+            index
+          };
+        });
+      }
+
+      function getCurrentItems() {
+        if (currentMode === MODE.OBS) return getObsSensorGroups();
+        if (currentMode === MODE.REF) return getRefItems();
+        if (currentMode === MODE.UCT) return getUctItems();
+        return getCompareItems();
+      }
+
+      function updateModeText() {
+        if (currentMode === MODE.OBS) modeTextEl.textContent = 'OBSERVATIONS';
+        else if (currentMode === MODE.REF) modeTextEl.textContent = 'REFERENCE';
+        else if (currentMode === MODE.UCT) modeTextEl.textContent = 'UCT OUTPUT';
+        else modeTextEl.textContent = 'COMPARE';
+      }
+
+      function setMode(mode) {
+        currentMode = mode;
+        currentSelectionIndex = 0;
+
+        modeToolbar.querySelectorAll('.btn[data-mode]').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+
+        updateModeText();
+        renderAll();
+      }
+
+      function stepSelection(delta) {
+        const items = getCurrentItems();
+        if (!items.length) return;
+        currentSelectionIndex = (currentSelectionIndex + delta + items.length) % items.length;
+        renderAll();
+      }
+
+      function updateSummary() {
+        const sensors = [...new Set(obsRows.map(x => x.sensorId))];
+        summaryEl.textContent =
+`MODE: ${currentMode.toUpperCase()}
+OBS COUNT: ${obsRows.length}
+ELSET COUNT: ${Array.isArray(datasetJson?.dataset_elset) ? datasetJson.dataset_elset.length : 0}
+REFERENCE COUNT: ${refRows.length}
+UCT OUTPUT COUNT: ${uctRows.length}
+SENSORS: ${sensors.length ? sensors.join(', ') : '--'}
+OBS START: ${obsRows.length ? formatTime(obsRows[0].obTime) : '--'}
+OBS END: ${obsRows.length ? formatTime(obsRows[obsRows.length - 1].obTime) : '--'}
+REF START: ${refRows.length ? formatTime(refRows[0].epoch) : '--'}
+REF END: ${refRows.length ? formatTime(refRows[refRows.length - 1].epoch) : '--'}`;
+      }
+
+      function renderObjectList() {
+        const items = getCurrentItems();
+        objectListEl.innerHTML = '';
+
+        if (!items.length) {
+          objectListEl.innerHTML = '<div class="value">No items available for this mode.</div>';
+          return;
+        }
+
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          const btn = document.createElement('button');
+          btn.className = 'item' + (i === currentSelectionIndex ? ' active' : '');
+          btn.innerHTML = `
+            <div class="item-title">${escapeHtml(item.title)}</div>
+            <div class="item-sub">${escapeHtml(item.subtitle)}</div>
+          `;
+          btn.addEventListener('click', () => {
+            currentSelectionIndex = i;
+            renderAll();
+          });
+          objectListEl.appendChild(btn);
+        }
+
+        if (currentMode === MODE.OBS) {
+          listSubtitleEl.textContent = `${items.length} sensor groups`;
+          legendNoteEl.textContent = 'OBS mode groups raw observations by sensor and shows only measurement geometry.';
+        } else if (currentMode === MODE.REF) {
+          listSubtitleEl.textContent = `${items.length} reference objects`;
+          legendNoteEl.textContent = 'REF mode spotlights the input reference satellites around Earth. Click any marker for its state vector details.';
+        } else if (currentMode === MODE.UCT) {
+          listSubtitleEl.textContent = `${items.length} UCT output objects`;
+          legendNoteEl.textContent = 'UCT mode shows the processor-produced state-vector objects only.';
+        } else {
+          listSubtitleEl.textContent = `${items.length} compare pairs`;
+          legendNoteEl.textContent = 'COMPARE shows truth vs output and the membership overlap of observations.';
+        }
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+
+      function clearVisuals() {
+        if (visualRoot && visualRoot.parent) {
+          visualRoot.parent.remove(visualRoot);
+        }
+        visualRoot = new THREE.Group();
+        scene.add(visualRoot);
+        clickableObjects = [];
+      }
+
+      function addClickableMarker(group, position, color, size, opacity, selectionIndex, kind) {
+        const marker = makeMarker(position, color, size, opacity);
+        marker.userData.selectionIndex = selectionIndex;
+        marker.userData.kind = kind;
+        clickableObjects.push(marker);
+        group.add(marker);
+        return marker;
+      }
+
+      function fitCameraToPosition(position) {
+        if (!position) {
+          cameraTarget.set(0, 0, 0);
+          return;
+        }
+        cameraTarget.copy(position.clone().multiplyScalar(0.18));
+      }
+
+      function renderObsMode() {
+        const groups = getObsSensorGroups();
+        if (!groups.length) {
+          recordEl.textContent = '--';
+          detailsEl.textContent = 'No observation data found.';
+          return;
+        }
+
+        const selected = groups[Math.max(0, Math.min(currentSelectionIndex, groups.length - 1))];
+        const rows = selected.rows;
+
+        const sensorsGroup = new THREE.Group();
+        const obsGroup = new THREE.Group();
+        const linesGroup = new THREE.Group();
+        visualRoot.add(sensorsGroup, obsGroup, linesGroup);
+
+        for (const obs of rows) {
+          sensorsGroup.add(makeMarker(obs.sensorPos, COLOR.sensor, 0.08, 0.72));
+          obsGroup.add(makeMarker(obs.obsPos, COLOR.obs, 0.06, 0.42));
+        }
+
+        const active = rows[rows.length - 1];
+        sensorsGroup.add(makeMarker(active.sensorPos, COLOR.sensor, 0.18, 1));
+        obsGroup.add(makeMarker(active.obsPos, COLOR.selected, 0.18, 1));
+        linesGroup.add(makeLine([active.sensorPos, active.obsPos], COLOR.selected, 0.72));
+
+        fitCameraToPosition(active.obsPos);
+
+        recordEl.textContent =
+`MODE OBS
+SENSOR ${selected.title}
+OBS ${rows.length}
+LATEST ${formatTime(active.obTime)}
+PLAY ${isPlaying ? 'ON' : 'OFF'}`;
+
+        detailsEl.textContent =
+`OBSERVATION MODE
+
+Sensor group: ${selected.title}
+Observation count: ${rows.length}
+
+Latest observation:
+ID ${active.id}
+TIME ${formatTime(active.obTime)}
+AZ ${num(active.azimuth).toFixed(3)}°
+EL ${num(active.elevation).toFixed(3)}°
+RANGE ${num(active.range).toFixed(3)} KM
+RA ${num(active.ra).toFixed(3)}°
+DEC ${num(active.declination).toFixed(3)}°
+LOS UNC ${num(active.losUnc).toFixed(3)}
+
+Sensor site:
+LAT ${num(active.senlat).toFixed(3)}
+LON ${num(active.senlon).toFixed(3)}
+ALT ${num(active.senalt).toFixed(3)} KM`;
+      }
+
+      function renderRefMode() {
+        const items = getRefItems();
+        if (!items.length) {
+          recordEl.textContent = '--';
+          detailsEl.textContent = 'No reference data found.';
+          return;
+        }
+
+        const selectedIndex = Math.max(0, Math.min(currentSelectionIndex, items.length - 1));
+        const selected = items[selectedIndex];
+        const ref = selected.ref;
+
+        const refGroup = new THREE.Group();
+        visualRoot.add(refGroup);
+
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          const isSelected = i === selectedIndex;
+          addClickableMarker(
+            refGroup,
+            item.ref.renderPos,
+            isSelected ? COLOR.selected : COLOR.ref,
+            isSelected ? 0.20 : 0.11,
+            isSelected ? 1.0 : 0.72,
+            i,
+            'ref'
+          );
+        }
+
+        fitCameraToPosition(ref.renderPos);
+
+        recordEl.textContent =
+`MODE REF
+SATNO ${ref.satNo ?? '--'}
+REF ${selectedIndex + 1}/${items.length}
+GROUPED OBS ${ref.groupedObsIds.length}
+PLAY ${isPlaying ? 'ON' : 'OFF'}`;
+
+        detailsEl.textContent =
+`REFERENCE MODE
+
+SAT NO ${ref.satNo ?? '--'}
+TIME ${formatTime(ref.epoch)}
+
+State vector:
+X ${num(ref.xpos).toFixed(3)} KM
+Y ${num(ref.ypos).toFixed(3)} KM
+Z ${num(ref.zpos).toFixed(3)} KM
+XV ${num(ref.xvel).toFixed(6)} KM/S
+YV ${num(ref.yvel).toFixed(6)} KM/S
+ZV ${num(ref.zvel).toFixed(6)} KM/S
+
+Linked data:
+GROUPED OBS IDS ${ref.groupedObsIds.length}
+GROUPED ELSET IDS ${ref.groupedElsetIds.length}
+
+This view is intentionally simplified:
+- only satellites are emphasized around the globe
+- click a satellite marker or choose it from the list
+- the input reference set is the focus here`;
+      }
+
+      function renderUctMode() {
+        const items = getUctItems();
+        if (!items.length) {
+          recordEl.textContent = '--';
+          detailsEl.textContent = 'No UCT output data found.';
+          return;
+        }
+
+        const selectedIndex = Math.max(0, Math.min(currentSelectionIndex, items.length - 1));
+        const selected = items[selectedIndex];
+        const out = selected.out;
+
+        const uctGroup = new THREE.Group();
+        visualRoot.add(uctGroup);
+
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          const isSelected = i === selectedIndex;
+          addClickableMarker(
+            uctGroup,
+            item.out.renderPos,
+            isSelected ? COLOR.selected : COLOR.uct,
+            isSelected ? 0.20 : 0.11,
+            isSelected ? 1.0 : 0.72,
+            i,
+            'uct'
+          );
+        }
+
+        fitCameraToPosition(out.renderPos);
+
+        recordEl.textContent =
+`MODE UCT
+IDSTATEVECTOR ${out.idStateVector ?? '--'}
+UCT ${selectedIndex + 1}/${items.length}
+SOURCED OBS ${out.sourcedData.length}
+PLAY ${isPlaying ? 'ON' : 'OFF'}`;
+
+        detailsEl.textContent =
+`UCT OUTPUT MODE
+
+ID STATE VECTOR ${out.idStateVector ?? '--'}
+TIME ${formatTime(out.epoch)}
+
+State vector:
+X ${num(out.xpos).toFixed(3)} KM
+Y ${num(out.ypos).toFixed(3)} KM
+Z ${num(out.zpos).toFixed(3)} KM
+XV ${num(out.xvel).toFixed(6)} KM/S
+YV ${num(out.yvel).toFixed(6)} KM/S
+ZV ${num(out.zvel).toFixed(6)} KM/S
+
+Solution metadata:
+ALGORITHM ${out.algorithm ?? '--'}
+SOURCE ${out.source ?? '--'}
+DATA MODE ${out.dataMode ?? '--'}
+RMS ${out.rms != null ? num(out.rms).toFixed(6) : '--'}
+
+Linked data:
+SOURCED OBS ${out.sourcedData.length}
+SOURCED TYPES ${out.sourcedDataTypes.length}`;
+      }
+
+      function renderCompareMode() {
+        const items = getCompareItems();
+        if (!items.length) {
+          recordEl.textContent = '--';
+          detailsEl.textContent = 'No compare pairs available.';
+          return;
+        }
+
+        const selectedIndex = Math.max(0, Math.min(currentSelectionIndex, items.length - 1));
+        const selected = items[selectedIndex];
+        const pair = selected.pair;
+        const ref = refRows[pair.refIndex];
+        const out = pair.uctIndex >= 0 ? uctRows[pair.uctIndex] : null;
+
+        const refGroup = new THREE.Group();
+        const uctGroup = new THREE.Group();
+        const compareGroup = new THREE.Group();
+        const obsGroup = new THREE.Group();
+        const sensorGroup = new THREE.Group();
+        const obsLines = new THREE.Group();
+
+        visualRoot.add(refGroup, uctGroup, compareGroup, obsGroup, sensorGroup, obsLines);
+
+        for (let i = 0; i < items.length; i++) {
+          const p = items[i].pair;
+          const r = refRows[p.refIndex];
+          const isSelected = i === selectedIndex;
+
+          addClickableMarker(
+            refGroup,
+            r.renderPos,
+            isSelected ? COLOR.selected : COLOR.ref,
+            isSelected ? 0.18 : 0.09,
+            isSelected ? 1.0 : 0.45,
+            i,
+            'compare'
+          );
+
+          if (p.uctIndex >= 0) {
+            const u = uctRows[p.uctIndex];
+            uctGroup.add(makeMarker(
+              u.renderPos,
+              isSelected ? COLOR.uct : COLOR.uctDim,
+              isSelected ? 0.16 : 0.08,
+              isSelected ? 0.95 : 0.35
+            ));
+          }
+        }
+
+        if (out) {
+          compareGroup.add(makeLine([ref.renderPos, out.renderPos], COLOR.white, 0.24));
+        }
+
+        const refSet = new Set(ref.groupedObsIds);
+        const outSet = new Set(out ? out.sourcedData : []);
+        const shared = [];
+        const missed = [];
+        const extra = [];
+
+        for (const id of refSet) {
+          if (outSet.has(id)) shared.push(id);
+          else missed.push(id);
+        }
+        for (const id of outSet) {
+          if (!refSet.has(id)) extra.push(id);
+        }
+
+        const renderObsIds = (ids, color, opacity) => {
+          for (const id of ids) {
+            const obs = obsById.get(id);
+            if (!obs) continue;
+            sensorGroup.add(makeMarker(obs.sensorPos, COLOR.sensor, 0.05, 0.45));
+            obsGroup.add(makeMarker(obs.obsPos, color, 0.06, opacity));
+            obsLines.add(makeLine([obs.sensorPos, obs.obsPos], color, 0.06));
+          }
+        };
+
+        renderObsIds(shared, COLOR.shared, 0.84);
+        renderObsIds(missed, COLOR.missed, 0.54);
+        renderObsIds(extra, COLOR.extra, 0.54);
+
+        fitCameraToPosition(out ? ref.renderPos.clone().add(out.renderPos).multiplyScalar(0.5) : ref.renderPos);
+
+        const posErrKm = out ? distanceKm(ref, out) : NaN;
+
+        recordEl.textContent =
+`MODE COMPARE
+SATNO ${ref.satNo ?? '--'}
+UCT ${out?.idStateVector ?? '--'}
+SHARED ${shared.length}
+SCORE ${(pair.score * 100).toFixed(1)}%
+PLAY ${isPlaying ? 'ON' : 'OFF'}`;
+
+        detailsEl.textContent =
+`COMPARE MODE
+
+Truth object:
+SAT NO ${ref.satNo ?? '--'}
+REF TIME ${formatTime(ref.epoch)}
+GROUPED OBS ${ref.groupedObsIds.length}
+
+Processor output:
+ID STATE VECTOR ${out?.idStateVector ?? '--'}
+UCT TIME ${out ? formatTime(out.epoch) : '--'}
+SOURCED OBS ${out?.sourcedData?.length ?? 0}
+RMS ${out?.rms != null ? num(out.rms).toFixed(6) : '--'}
+
+Set comparison:
+SHARED OBS ${shared.length}
+MISSED OBS ${missed.length}
+EXTRA OBS ${extra.length}
+MATCH SCORE ${(pair.score * 100).toFixed(2)}%
+
+State-vector comparison:
+POSITION ERROR ${Number.isFinite(posErrKm) ? posErrKm.toFixed(3) + ' KM' : '--'}`;
+      }
+
+      function renderSceneForMode() {
+        clearVisuals();
+
+        if (currentMode === MODE.OBS) {
+          renderObsMode();
+        } else if (currentMode === MODE.REF) {
+          renderRefMode();
+        } else if (currentMode === MODE.UCT) {
+          renderUctMode();
+        } else {
+          renderCompareMode();
+        }
+      }
+
+      function renderAll() {
+        updateSummary();
+        renderObjectList();
+        renderSceneForMode();
+      }
+
+      function updateCamera() {
+        const cosPitch = Math.cos(cameraPitch);
+        camera.position.x = cameraTarget.x + cameraRadius * cosPitch * Math.cos(cameraYaw);
+        camera.position.y = cameraTarget.y + cameraRadius * Math.sin(cameraPitch);
+        camera.position.z = cameraTarget.z + cameraRadius * cosPitch * Math.sin(cameraYaw);
+        camera.lookAt(cameraTarget);
+      }
+
+      function updatePlayback(timestamp) {
+        if (!isPlaying) return;
+        if (!lastStepMs) {
+          lastStepMs = timestamp;
+          return;
+        }
+
+        if (timestamp - lastStepMs >= STEP_INTERVAL_MS) {
+          lastStepMs = timestamp;
+          stepSelection(1);
+        }
+      }
+
+      function animate(timestamp) {
+        requestAnimationFrame(animate);
+
+        if (earthGroup) {
+          earthGroup.rotation.y += 0.00042;
+        }
+
+        updatePlayback(timestamp || 0);
+        updateCamera();
+        renderer.render(scene, camera);
+      }
+
+      async function loadAllData(datasetPath, uctPath) {
+        datasetJson = await loadJson(datasetPath);
+
+        try {
+          uctpJson = await loadJson(uctPath);
+        } catch (_) {
+          uctpJson = [];
+        }
+
+        obsRows = normalizeDatasetObs();
+        refRows = normalizeReference();
+        uctRows = normalizeUctp();
+
+        buildLookups();
+        buildComparePairs();
+      }
+
+      async function reloadDataFromInputs() {
+        const nextDatasetPath = datasetPathInput.value.trim();
+        const nextUctPath = uctPathInput.value.trim();
+
+        if (!nextDatasetPath) {
+          dataSourceStatusEl.textContent = 'Dataset path is required.';
+          return;
+        }
+
+        DATASET_PATH = nextDatasetPath;
+        UCTP_OUTPUT_PATH = nextUctPath;
+
+        dataSourceStatusEl.textContent = 'Reloading data...';
+        summaryEl.textContent = 'Reloading data...';
+
+        try {
+          await loadAllData(DATASET_PATH, UCTP_OUTPUT_PATH);
+          currentSelectionIndex = 0;
+          renderAll();
+
+          dataSourceStatusEl.textContent =
+`Loaded successfully.
+Dataset: ${DATASET_PATH}
+UCT: ${UCTP_OUTPUT_PATH || '--'}`;
+        } catch (err) {
+          console.error(err);
+          dataSourceStatusEl.textContent = `Load failed: ${err.message}`;
+          summaryEl.textContent = `ERROR: ${err.message}`;
+          detailsEl.textContent = err.stack || String(err);
+        }
+      }
+
+      async function boot() {
+        try {
+          summaryEl.textContent = 'Initializing scene...';
+          initScene();
+
+          datasetPathInput.value = DATASET_PATH;
+          uctPathInput.value = UCTP_OUTPUT_PATH;
+
+          await loadAllData(DATASET_PATH, UCTP_OUTPUT_PATH);
+
+          updateModeText();
+          renderAll();
+          animate();
+
+          dataSourceStatusEl.textContent =
+`Loaded successfully.
+Dataset: ${DATASET_PATH}
+UCT: ${UCTP_OUTPUT_PATH}`;
+        } catch (err) {
+          console.error(err);
+          summaryEl.textContent = `ERROR: ${err.message}`;
+          detailsEl.textContent = err.stack || String(err);
+          dataSourceStatusEl.textContent = `Load failed: ${err.message}`;
+        }
+      }
+
+      boot();
+    })();
+  </script>
+</body>
+</html>

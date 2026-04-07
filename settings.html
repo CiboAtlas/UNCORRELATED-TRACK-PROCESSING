@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics Console — Settings</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+
+    <style>
+      .settings-edit-link{
+        background:none;
+        border:none;
+        padding:0;
+        margin:0;
+        color:var(--text);
+        font:inherit;
+        font-weight:700;
+        cursor:pointer;
+        text-align:left;
+      }
+
+      .settings-edit-link:hover{
+        color:var(--text);
+        opacity:.88;
+      }
+
+      .settings-static-label{
+        color:var(--text);
+        font:inherit;
+        font-weight:700;
+        text-align:left;
+      }
+
+      .settings-empty-state a{
+        color:var(--text);
+        font-weight:700;
+        text-decoration:none;
+      }
+
+      .settings-empty-state a:hover{
+        color:var(--text);
+        opacity:.88;
+      }
+
+      .settings-modal{
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,.62);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        z-index:1200;
+        padding:20px;
+        backdrop-filter:blur(4px);
+      }
+
+      .settings-modal.hidden{
+        display:none;
+      }
+
+      .settings-modal-card{
+        width:min(100%, 560px);
+        background:#1f1f22;
+        border:1px solid rgba(255,255,255,.10);
+        border-radius:18px;
+        box-shadow:0 18px 60px rgba(0,0,0,.45);
+        overflow:hidden;
+      }
+
+      .settings-modal-header{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        padding:18px 18px 10px;
+      }
+
+      .settings-modal-title{
+        font-size:16px;
+        font-weight:700;
+        color:var(--text);
+      }
+
+      .settings-modal-close{
+        border:none;
+        background:transparent;
+        color:var(--text);
+        opacity:.85;
+        font-size:24px;
+        line-height:1;
+        cursor:pointer;
+        padding:0 2px;
+      }
+
+      .settings-modal-close:hover{
+        opacity:1;
+      }
+
+      .settings-modal-body{
+        padding:0 18px 18px;
+      }
+
+      .settings-modal-label{
+        display:block;
+        font-size:14px;
+        color:var(--text);
+        opacity:.9;
+        margin-bottom:10px;
+      }
+
+      .settings-modal-input{
+        width:100%;
+        min-height:48px;
+        border-radius:12px;
+        border:1px solid rgba(255,255,255,.35);
+        background:#1c1c1f;
+        color:var(--text);
+        padding:12px 14px;
+        font:inherit;
+        font-size:16px;
+        outline:none;
+      }
+
+      .settings-modal-input:focus{
+        border-color:rgba(255,255,255,.65);
+      }
+
+      .settings-modal-footer{
+        display:flex;
+        justify-content:flex-end;
+        gap:12px;
+        padding:6px 18px 18px;
+      }
+
+      .settings-modal-btn{
+        border:none;
+        border-radius:14px;
+        padding:10px 18px;
+        font:inherit;
+        font-weight:700;
+        cursor:pointer;
+      }
+
+      .settings-modal-btn.cancel{
+        background:transparent;
+        color:var(--text);
+        opacity:.9;
+      }
+
+      .settings-modal-btn.save{
+        background:rgba(255,255,255,.10);
+        color:var(--text);
+        border:1px solid rgba(255,255,255,.08);
+      }
+
+      .settings-modal-btn.save:hover{
+        background:rgba(255,255,255,.16);
+      }
+
+      .settings-save-note{
+        margin-top:10px;
+        font-size:12px;
+        color:var(--muted);
+      }
+
+      .settings-path-value{
+        margin-top:6px;
+        font-size:14px;
+        color:var(--text);
+        opacity:.92;
+        word-break:break-word;
+        line-height:1.4;
+      }
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="project-initials">SDA</span>
+        <span class="project-name">Analytics Console</span>
+      </div>
+
+      <nav class="nav">
+        <a class="nav-item" href="index.html?welcome=1" title="Open welcome">
+          <span class="icon"></span><span>Welcome</span>
+        </a>
+        <a class="nav-item" href="index.html">
+          <span class="icon"></span><span>Dashboard</span>
+        </a>
+        <a class="nav-item" href="3DViewer.html">
+          <span class="icon"></span><span>3DViewer [ALPHA]</span>
+        </a>
+        <a class="nav-item" href="mllm.html">
+          <span class="icon"></span><span>mLLM</span>
+        </a>
+        <a class="nav-item" href="evaluation.html">
+          <span class="icon"></span><span>Evaluation [BETA]</span>
+        </a>
+        <a class="nav-item" href="documentation.html">
+          <span class="icon"></span><span>Documentation</span>
+        </a>
+        <a class="nav-item active" href="settings.html">
+          <span class="icon"></span><span>Settings</span>
+        </a>
+      </nav>
+    </aside>
+
+    <main class="settings-shell">
+      <section class="settings-page">
+        <div class="settings-topbar"></div>
+
+        <div class="settings-header-row">
+          <h1 class="settings-title">Settings</h1>
+        </div>
+
+        <section class="settings-table-card">
+          <div class="settings-table-header">
+            <div>Program</div>
+            <div>Data Pull</div>
+            <div>API Key</div>
+            <div></div>
+          </div>
+
+          <div class="settings-table-row">
+            <div class="settings-key-cell">
+              <button
+                id="programNameText"
+                type="button"
+                class="settings-edit-link"
+                data-edit-mode="program_subtext"
+                data-edit-title="Rename Program"
+                data-edit-label="Program value"
+              >
+                Program Name
+              </button>
+              <div id="programSubtext" class="settings-subtext">Initial-program</div>
+              <div class="settings-save-note">
+                Click the Program Name label to rename the project.
+              </div>
+            </div>
+
+            <div class="settings-project-cell">
+              <button
+                id="pathwayNameText"
+                type="button"
+                class="settings-edit-link"
+                data-edit-mode="pathway_label"
+                data-edit-title="Update Checkpoint Path"
+                data-edit-label="Checkpoint folder path"
+              >
+                Pathway
+              </button>
+              <div id="pathwaySubtext" class="settings-subtext">Checkpoints</div>
+              <div class="settings-save-note">
+                Click the Pathway label or use the pencil to change the checkpoint path.
+              </div>
+            </div>
+
+            <div class="settings-project-cell">
+              <button
+                id="keyNameText"
+                type="button"
+                class="settings-edit-link"
+                data-edit-mode="api_key_value"
+                data-edit-title="Set API Key"
+                data-edit-label="API key"
+              >
+                Key
+              </button>
+              <div id="keySubtext" class="settings-subtext">OPENAI_API_KEY</div>
+              <div class="settings-save-note">
+                This reads and writes the real <code>api_key</code> value from your OpenEvolve YAML config.
+              </div>
+            </div>
+
+            <div class="settings-actions">
+              <button id="editPathBtn" class="settings-icon-btn" type="button" title="Edit checkpoint path">✎</button>
+              <button id="copyPathBtn" class="settings-icon-btn" type="button" title="Copy checkpoint path">⧉</button>
+              <button class="settings-icon-btn" type="button" title="More">⋮</button>
+            </div>
+          </div>
+
+          <div class="settings-table-row">
+            <div class="settings-key-cell">
+              <div class="settings-static-label">Configuration</div>
+              <div id="datasetSubtext" class="settings-subtext">configuration.yaml</div>
+              <div class="settings-save-note">
+                This dataset is to transfer configuration data onto the Analytic Console.
+              </div>
+            </div>
+
+            <div class="settings-project-cell">
+              <button
+                id="sourceNameText"
+                type="button"
+                class="settings-edit-link"
+                data-edit-mode="config_yaml_path"
+                data-edit-title="Update Config YAML Path"
+                data-edit-label="Config YAML path"
+              >
+                Source
+              </button>
+              <div id="sourcePathText" class="settings-path-value">config.yaml</div>
+              <div class="settings-save-note">
+                Click the Source label or pencil to change the YAML config path.
+              </div>
+            </div>
+
+            <div class="settings-project-cell">
+              <div class="settings-subtext">—</div>
+              <div class="settings-save-note">
+                No API key used for this row.
+              </div>
+            </div>
+
+            <div class="settings-actions">
+              <button id="editSourceBtn" class="settings-icon-btn" type="button" title="Edit config YAML path">✎</button>
+              <button id="copySourceBtn" class="settings-icon-btn" type="button" title="Copy config YAML path">⧉</button>
+              <button class="settings-icon-btn" type="button" title="More">⋮</button>
+            </div>
+          </div>
+
+          <div class="settings-table-row">
+            <div class="settings-key-cell">
+              <div class="settings-static-label">OpenEvolve Logs</div>
+              <div id="logsDatasetSubtext" class="settings-subtext">logs.txt</div>
+              <div class="settings-save-note">
+                This row controls where the OpenEvolve Log panel pulls its latest log file from.
+              </div>
+            </div>
+
+            <div class="settings-project-cell">
+              <button
+                id="logsSourceNameText"
+                type="button"
+                class="settings-edit-link"
+                data-edit-mode="openevolve_logs_dir"
+                data-edit-title="Update OpenEvolve Logs Path"
+                data-edit-label="OpenEvolve logs folder"
+              >
+                Source
+              </button>
+              <div id="logsSourcePathText" class="settings-path-value">C:\Users\kfg4s\Downloads\SENIOR DESIGN\openevolve\examples\function_minimization\openevolve_output\logs</div>
+              <div class="settings-save-note">
+                Click the Source label or pencil to change the logs folder used by the OpenEvolve Log panel.
+              </div>
+            </div>
+
+            <div class="settings-project-cell">
+              <div class="settings-subtext">—</div>
+              <div class="settings-save-note">
+                No API key used for this row.
+              </div>
+            </div>
+
+            <div class="settings-actions">
+              <button id="editLogsSourceBtn" class="settings-icon-btn" type="button" title="Edit OpenEvolve logs path">✎</button>
+              <button id="copyLogsSourceBtn" class="settings-icon-btn" type="button" title="Copy OpenEvolve logs path">⧉</button>
+              <button class="settings-icon-btn" type="button" title="More">⋮</button>
+            </div>
+          </div>
+
+          <div class="settings-empty-state">
+            <div class="settings-empty-star">SDA TAP LAB</div>
+            <h2>Transferring to a new environment?</h2>
+            <p>
+              This page shows you how current data is being processed into the Analytics
+              Console. You can also manage and reconfigure new paths for new environments
+              above. <a href="#">Learn more</a>
+            </p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div id="settingsEditModal" class="settings-modal hidden" aria-hidden="true">
+      <div class="settings-modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+        <div class="settings-modal-header">
+          <div id="settingsModalTitle" class="settings-modal-title">Edit</div>
+          <button id="settingsModalClose" class="settings-modal-close" type="button" aria-label="Close">×</button>
+        </div>
+
+        <div class="settings-modal-body">
+          <label id="settingsModalLabel" class="settings-modal-label" for="settingsModalInput">Value</label>
+          <textarea id="settingsModalInput" class="settings-modal-input"></textarea>
+          <div id="settingsModalHint" class="settings-save-note"></div>
+        </div>
+
+        <div class="settings-modal-footer">
+          <button id="settingsModalCancel" class="settings-modal-btn cancel" type="button">Cancel</button>
+          <button id="settingsModalSave" class="settings-modal-btn save" type="button">Update ↵</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      localStorage.setItem('l16_hasVisited', '1');
+
+      (function () {
+        const SETTINGS_API = '/api/settings';
+        const DEFAULT_LOGS_PATH = 'C:\\Users\\kfg4s\\Downloads\\SENIOR DESIGN\\openevolve\\examples\\function_minimization\\openevolve_output\\logs';
+
+        const modal = document.getElementById('settingsEditModal');
+        const modalTitle = document.getElementById('settingsModalTitle');
+        const modalLabel = document.getElementById('settingsModalLabel');
+        const modalInput = document.getElementById('settingsModalInput');
+        const modalHint = document.getElementById('settingsModalHint');
+        const closeBtn = document.getElementById('settingsModalClose');
+        const cancelBtn = document.getElementById('settingsModalCancel');
+        const saveBtn = document.getElementById('settingsModalSave');
+
+        const copyPathBtn = document.getElementById('copyPathBtn');
+        const editPathBtn = document.getElementById('editPathBtn');
+
+        const copySourceBtn = document.getElementById('copySourceBtn');
+        const editSourceBtn = document.getElementById('editSourceBtn');
+
+        const copyLogsSourceBtn = document.getElementById('copyLogsSourceBtn');
+        const editLogsSourceBtn = document.getElementById('editLogsSourceBtn');
+
+        let activeMode = '';
+
+        async function fetchJson(url, options = {}) {
+          const res = await fetch(url, options);
+          const text = await res.text();
+
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch {
+            throw new Error(`Expected JSON from ${url}, but got HTML or invalid text.`);
+          }
+
+          if (!res.ok) {
+            throw new Error(data.message || 'Request failed');
+          }
+
+          return data;
+        }
+
+        function maskApiKey(value) {
+          const raw = String(value || '').trim();
+          if (!raw) return '';
+          if (raw.length <= 10) return raw;
+          return `${raw.slice(0, 6)}••••••••${raw.slice(-4)}`;
+        }
+
+        async function loadSettings() {
+          try {
+            const data = await fetchJson(SETTINGS_API, { cache: 'no-store' });
+
+            document.getElementById('programNameText').textContent = data.program_name || 'Program Name';
+            document.getElementById('programSubtext').textContent = data.program_subtext || 'Initial-program';
+
+            document.getElementById('pathwayNameText').textContent = data.pathway_label || 'Pathway';
+            document.getElementById('pathwaySubtext').textContent = data.checkpoints_dir || 'Checkpoints';
+
+            document.getElementById('keyNameText').textContent = data.api_key_label || 'Key';
+            document.getElementById('keySubtext').textContent = data.api_key_value
+              ? maskApiKey(data.api_key_value)
+              : 'OPENAI_API_KEY';
+
+            document.getElementById('datasetSubtext').textContent = 'configuration.yaml';
+            document.getElementById('sourcePathText').textContent = data.config_yaml_path || 'config.yaml';
+
+            document.getElementById('logsDatasetSubtext').textContent = 'logs.txt';
+            document.getElementById('logsSourcePathText').textContent = data.openevolve_logs_dir || DEFAULT_LOGS_PATH;
+          } catch (err) {
+            console.error(err);
+            alert(err.message);
+          }
+        }
+
+        function openModal(mode, title, label, value, hint) {
+          activeMode = mode;
+          modalTitle.textContent = title;
+          modalLabel.textContent = label;
+          modalInput.value = value;
+          modalHint.textContent = hint || '';
+
+          modal.classList.remove('hidden');
+          modal.setAttribute('aria-hidden', 'false');
+
+          requestAnimationFrame(() => {
+            modalInput.focus();
+            modalInput.select();
+          });
+        }
+
+        function closeModal() {
+          modal.classList.add('hidden');
+          modal.setAttribute('aria-hidden', 'true');
+          activeMode = '';
+        }
+
+        async function openLabelModal(btn) {
+          const mode = btn.dataset.editMode;
+
+          if (mode === 'program_subtext') {
+            openModal(
+              'program_subtext',
+              btn.dataset.editTitle || 'Rename Program',
+              btn.dataset.editLabel || 'Program value',
+              document.getElementById('programSubtext').textContent.trim(),
+              'This change will be saved and stay after refresh.'
+            );
+            return;
+          }
+
+          if (mode === 'pathway_label') {
+            openModal(
+              'checkpoints_dir',
+              'Update Checkpoint Path',
+              'Checkpoint folder path',
+              document.getElementById('pathwaySubtext').textContent.trim(),
+              'This updates the server path used by /api/openevolve/evolutions for the dashboard graphs.'
+            );
+            return;
+          }
+
+          if (mode === 'config_yaml_path') {
+            openModal(
+              'config_yaml_path',
+              btn.dataset.editTitle || 'Update Config YAML Path',
+              btn.dataset.editLabel || 'Config YAML path',
+              document.getElementById('sourcePathText').textContent.trim(),
+              'This updates the server path used by /api/openevolve/config-summary for the Queue panel.'
+            );
+            return;
+          }
+
+          if (mode === 'openevolve_logs_dir') {
+            let currentLogsPath = DEFAULT_LOGS_PATH;
+            try {
+              const data = await fetchJson(SETTINGS_API, { cache: 'no-store' });
+              currentLogsPath = data.openevolve_logs_dir || DEFAULT_LOGS_PATH;
+            } catch (_) {}
+
+            openModal(
+              'openevolve_logs_dir',
+              btn.dataset.editTitle || 'Update OpenEvolve Logs Path',
+              btn.dataset.editLabel || 'OpenEvolve logs folder',
+              currentLogsPath,
+              'This updates the server path used by /api/openevolve/latest-log for the OpenEvolve Log panel.'
+            );
+            return;
+          }
+
+          if (mode === 'api_key_value') {
+            const data = await fetchJson(SETTINGS_API, { cache: 'no-store' });
+            openModal(
+              'api_key_value',
+              btn.dataset.editTitle || 'Set API Key',
+              btn.dataset.editLabel || 'API key',
+              data.api_key_value || '',
+              `This writes the real api_key inside:\n${data.config_yaml_path || ''}`
+            );
+          }
+        }
+
+        function openPathModal() {
+          openModal(
+            'checkpoints_dir',
+            'Update Checkpoint Path',
+            'Checkpoint folder path',
+            document.getElementById('pathwaySubtext').textContent.trim(),
+            'This updates the server path used by /api/openevolve/evolutions for the dashboard graphs.'
+          );
+        }
+
+        function openSourceModal() {
+          openModal(
+            'config_yaml_path',
+            'Update Config YAML Path',
+            'Config YAML path',
+            document.getElementById('sourcePathText').textContent.trim(),
+            'This updates the server path used by /api/openevolve/config-summary for the Queue panel.'
+          );
+        }
+
+        async function openLogsSourceModal() {
+          let currentLogsPath = DEFAULT_LOGS_PATH;
+          try {
+            const data = await fetchJson(SETTINGS_API, { cache: 'no-store' });
+            currentLogsPath = data.openevolve_logs_dir || DEFAULT_LOGS_PATH;
+          } catch (_) {}
+
+          openModal(
+            'openevolve_logs_dir',
+            'Update OpenEvolve Logs Path',
+            'OpenEvolve logs folder',
+            currentLogsPath,
+            'This updates the server path used by /api/openevolve/latest-log for the OpenEvolve Log panel.'
+          );
+        }
+
+        async function saveModal() {
+          const nextValue = modalInput.value.trim();
+          if (!nextValue) return;
+
+          try {
+            const payload = {};
+
+            if (activeMode === 'program_subtext') {
+              payload.program_subtext = nextValue;
+            } else if (activeMode === 'pathway_label' || activeMode === 'checkpoints_dir') {
+              payload.checkpoints_dir = nextValue;
+            } else if (activeMode === 'config_yaml_path') {
+              payload.config_yaml_path = nextValue;
+            } else if (activeMode === 'openevolve_logs_dir') {
+              payload.openevolve_logs_dir = nextValue;
+            } else if (activeMode === 'api_key_value') {
+              payload.api_key_value = nextValue;
+            } else {
+              return;
+            }
+
+            const data = await fetchJson(SETTINGS_API, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+            document.getElementById('programNameText').textContent = data.settings.program_name || 'Program Name';
+            document.getElementById('programSubtext').textContent = data.settings.program_subtext || 'Initial-program';
+
+            document.getElementById('pathwayNameText').textContent = data.settings.pathway_label || 'Pathway';
+            document.getElementById('pathwaySubtext').textContent = data.settings.checkpoints_dir || 'Checkpoints';
+
+            document.getElementById('keyNameText').textContent = data.settings.api_key_label || 'Key';
+            document.getElementById('keySubtext').textContent = data.settings.api_key_value
+              ? maskApiKey(data.settings.api_key_value)
+              : 'OPENAI_API_KEY';
+
+            document.getElementById('datasetSubtext').textContent = 'configuration.yaml';
+            document.getElementById('sourcePathText').textContent = data.settings.config_yaml_path || 'config.yaml';
+
+            document.getElementById('logsDatasetSubtext').textContent = 'logs.txt';
+            document.getElementById('logsSourcePathText').textContent = data.settings.openevolve_logs_dir || DEFAULT_LOGS_PATH;
+
+            closeModal();
+          } catch (err) {
+            alert(err.message);
+          }
+        }
+
+        document.querySelectorAll('.settings-edit-link').forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            try {
+              await openLabelModal(btn);
+            } catch (err) {
+              alert(err.message);
+            }
+          });
+        });
+
+        editPathBtn.addEventListener('click', openPathModal);
+        editSourceBtn.addEventListener('click', openSourceModal);
+        editLogsSourceBtn.addEventListener('click', openLogsSourceModal);
+
+        copyPathBtn.addEventListener('click', async () => {
+          const pathText = document.getElementById('pathwaySubtext').textContent.trim();
+          try {
+            await navigator.clipboard.writeText(pathText);
+          } catch (_) {}
+        });
+
+        copySourceBtn.addEventListener('click', async () => {
+          const pathText = document.getElementById('sourcePathText').textContent.trim();
+          try {
+            await navigator.clipboard.writeText(pathText);
+          } catch (_) {}
+        });
+
+        copyLogsSourceBtn.addEventListener('click', async () => {
+          try {
+            const data = await fetchJson(SETTINGS_API, { cache: 'no-store' });
+            const pathText = (data.openevolve_logs_dir || DEFAULT_LOGS_PATH).trim();
+            await navigator.clipboard.writeText(pathText);
+          } catch (_) {}
+        });
+
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+        saveBtn.addEventListener('click', saveModal);
+
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) closeModal();
+        });
+
+        modalInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            saveModal();
+          }
+          if (e.key === 'Escape') closeModal();
+        });
+
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+            closeModal();
+          }
+        });
+
+        loadSettings();
+      })();
+    </script>
+  </body>
+</html>
