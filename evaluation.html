@@ -367,7 +367,7 @@
   <main class="evaluation-main">
     <h1 class="page-title">Evaluation</h1>
     <p class="page-subtitle">
-      Enter the <span class="inline-code">raw_results.json</span> path, then render the same report-style charts and tables directly on this page.
+      Enter the <span class="inline-code">raw_results.json</span> path, or leave it blank to use the server default search locations.
     </p>
 
     <section class="control-shell">
@@ -387,7 +387,8 @@
           class="path-input"
           type="text"
           spellcheck="false"
-          value="C:\Users\kfg4s\Downloads\SENIOR DESIGN\UI-DEVELOPMENT\assets\UCT-benchmarking\data\raw_results.json"
+          placeholder="Optional: enter raw_results.json path"
+          value=""
         />
         <div id="currentPathText" class="field-sub"></div>
       </div>
@@ -577,8 +578,10 @@
       }
 
       function updatePathPreview() {
-        const rawPath = rawResultsPathInput.value.trim() || '—';
-        currentPathText.textContent = `Raw Results:\n${rawPath}`;
+        const rawPath = rawResultsPathInput.value.trim();
+        currentPathText.textContent = rawPath
+          ? `Raw Results:\n${rawPath}`
+          : 'Raw Results:\n[server will use default search locations]';
       }
 
       function toPrettyJson(value) {
@@ -913,6 +916,8 @@
       rawResultsPathInput.addEventListener('input', updatePathPreview);
 
       clearResultsBtn.addEventListener('click', () => {
+        rawResultsPathInput.value = '';
+        updatePathPreview();
         setLog('Cleared current results.');
         resetResults();
       });
@@ -920,19 +925,20 @@
       loadResultsBtn.addEventListener('click', async () => {
         const rawResultsPath = rawResultsPathInput.value.trim();
 
-        if (!rawResultsPath) {
-          setLog('Please enter the raw_results.json path.');
-          return;
-        }
-
         try {
           loadResultsBtn.disabled = true;
-          setLog(`Loading raw results from:\n${rawResultsPath}`);
+          setLog(
+            rawResultsPath
+              ? `Loading raw results from:\n${rawResultsPath}`
+              : 'Loading raw results using server default search locations...'
+          );
+
+          const body = rawResultsPath ? { rawResultsPath } : {};
 
           const response = await fetch('/api/evaluation/raw-results', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rawResultsPath })
+            body: JSON.stringify(body)
           });
 
           const payload = await response.json().catch(() => ({}));
@@ -952,7 +958,9 @@
           renderCharts(payload);
 
           jsonViewer.textContent = toPrettyJson(payload);
-          setLog(payload.message || 'Raw results loaded successfully.');
+          setLog(
+            `${payload.message || 'Raw results loaded successfully.'}\n\nLoaded from:\n${payload.raw_results_path || '[server default search path]'}`
+          );
         } catch (error) {
           setLog(`Load failed: ${error.message}`);
           jsonViewer.textContent = `Error:\n${error.message}`;
