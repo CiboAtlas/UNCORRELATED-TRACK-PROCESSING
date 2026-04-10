@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+
+    <style>
+      .top-log-panel{
+        min-width: 0;
+        grid-column: span 2;
+      }
+
+      .top-log-panel .panel-body{
+        height: 85px;
+        min-height: 85px;
+        max-height: 85px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.45;
+        box-sizing: border-box;
+        padding: 0 14px 0 0;
+        margin: 0;
+        scrollbar-gutter: stable;
+      }
+
+      .top-log-panel .log-meta{
+        color: var(--muted);
+        font-size: 11px;
+        margin: 0 0 6px 0;
+      }
+
+      .top-log-panel code{
+        display: block;
+        white-space: pre-wrap;
+        margin: 0;
+        padding: 0;
+      }
+
+      .top-log-panel .panel-body::-webkit-scrollbar,
+      #systemLog::-webkit-scrollbar{
+        width: 10px;
+      }
+
+      .top-log-panel .panel-body::-webkit-scrollbar-track,
+      #systemLog::-webkit-scrollbar-track{
+        background: transparent;
+        margin: 6px 0;
+      }
+
+      .top-log-panel .panel-body::-webkit-scrollbar-thumb,
+      #systemLog::-webkit-scrollbar-thumb{
+        background: rgba(255,255,255,0.28);
+        border-radius: 999px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+      }
+
+      #systemLog{
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-gutter: stable;
+        padding-right: 14px;
+        box-sizing: border-box;
+      }
+
+      #systemLog code{
+        display: block;
+        margin: 0;
+        padding: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="welcomeOverlay" class="welcome-overlay" aria-hidden="false">
+      <canvas id="welcomeCanvas3d" class="welcome-canvas" aria-hidden="true"></canvas>
+      <canvas id="welcomeCanvas2d" class="welcome-canvas overlay" aria-hidden="true"></canvas>
+
+      <div class="welcome-content">
+        <div class="welcome-pill"><span class="welcome-logo">SDA TAP LAB</span></div>
+        <h1 class="welcome-title">Uncorrelated Track Processing</h1>
+        <p class="welcome-subtitle">Analytic Console</p>
+        <button id="enterBtn" class="enter-btn" aria-label="Enter dashboard">Enter</button>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="project-initials">SDA</span>
+        <span class="project-name">Analytics Console</span>
+      </div>
+
+      <nav class="nav">
+        <a id="openWelcomeBtn" class="nav-item" href="#" title="Open welcome">
+          <span class="icon"></span><span>Welcome</span>
+        </a>
+        <a class="nav-item active" href="index.html"><span class="icon"></span><span>Dashboard</span></a>
+        <a class="nav-item" href="3DViewer.html"><span class="icon"></span><span>3DViewer [ALPHA]</span></a>
+        <a class="nav-item" href="mllm.html"><span class="icon"></span><span>mLLM</span></a>
+        <a class="nav-item" href="evaluation.html"><span class="icon"></span><span>Evaluation [BETA]</span></a>
+        <a class="nav-item" href="documentation.html"><span class="icon"></span><span>Documentation</span></a>
+        <a class="nav-item" href="settings.html"><span class="icon"></span><span>Settings</span></a>
+      </nav>
+    </aside>
+
+    <main class="hud">
+      <div class="hud-top">
+        <div class="panel-thin">
+          <div class="panel-header"><span>Telemetry</span><span class="dot"></span></div>
+          <div class="panel-body list">
+            <div><span>Avg Range</span><b id="tAvgRange">—</b></div>
+            <div><span>Avg LOS Unc</span><b id="tAvgLos">—</b></div>
+            <div><span>Latest Obs</span><b id="tLatest">—</b></div>
+          </div>
+        </div>
+
+        <div class="panel-thin top-log-panel">
+          <div class="panel-header"><span>OpenEvolve Log</span></div>
+          <div class="panel-body" id="openEvolveLog">
+            <div class="log-meta">Waiting for latest log file...</div>
+            <code>—</code>
+          </div>
+        </div>
+
+        <div class="panel-thin">
+          <div class="panel-header"><span>Queue</span><span class="dot"></span></div>
+          <div class="panel-body list">
+            <div><span>Uncorrelated</span><b id="qUncorrelated">—</b></div>
+            <div><span>Resolved</span><b id="qResolved">—</b></div>
+            <div><span>Flagged</span><b id="qFlagged">—</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-left">
+        <div class="panel-stack">
+          <div class="panel-thin">
+            <div class="panel-header"><span>Pass Window</span></div>
+            <div class="panel-body ticker" id="passWindow">—</div>
+          </div>
+
+          <div class="panel-thin">
+            <div class="panel-header"><span>Constellations</span></div>
+            <div class="panel-body list tight">
+              <div><span>Unique Sensors</span><b id="cSensors">—</b></div>
+              <div><span>Obs / hr</span><b id="cObsRate">—</b></div>
+              <div><span>Span</span><b id="cSpan">—</b></div>
+            </div>
+          </div>
+
+          <div class="panel-thin">
+            <div class="panel-header"><span>Reliability Score</span></div>
+            <div class="panel-body list tight">
+              <div><span>Latest</span><b id="metricReliability">—</b></div>
+              <div><span>Status</span><b id="metricReliabilityStatus">—</b></div>
+            </div>
+          </div>
+
+          <div class="panel-thin">
+            <div class="panel-header"><span>Latest Metrics</span></div>
+            <div class="panel-body list tight" id="latestMetricsPanel">
+              <div><span>Waiting for checkpoint...</span><b>—</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <div class="panel-stack">
+          <div class="panel-thin">
+            <div class="panel-header"><span>Alerts</span><span class="dot"></span></div>
+            <div class="panel-body list tight">
+              <div><span>LOS&gt;3</span><b id="aLosHigh">—</b></div>
+              <div><span>Sensor=nan</span><b id="aNanSensor">—</b></div>
+              <div><span>Range Jump</span><b id="aRangeJump">—</b></div>
+            </div>
+          </div>
+
+          <div class="panel-thin">
+            <div class="panel-header"><span>Throughput</span></div>
+            <div class="panel-body bars small" id="throughputBars">
+              <div style="--v:30%"></div>
+              <div style="--v:55%"></div>
+              <div style="--v:80%"></div>
+              <div style="--v:42%"></div>
+            </div>
+          </div>
+
+          <div class="panel-thin">
+            <div class="panel-header"><span>Ops</span></div>
+            <div class="panel-body list tight">
+              <div><span>Operators</span><b id="opsOperators">—</b></div>
+              <div><span>Jobs</span><b id="opsJobs">—</b></div>
+              <div><span>ETA</span><b id="opsEta">—</b></div>
+            </div>
+          </div>
+
+          <div class="panel-thin">
+            <div class="panel-header"><span>Version</span></div>
+            <div class="panel-body ticker">v1.3 (build no.5)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-bottom">
+        <div class="panel-thin">
+          <div class="panel-header"><span>System Log</span></div>
+          <div class="panel-body log" id="systemLog">
+            <code>[boot] waiting for dataset...</code>
+          </div>
+        </div>
+
+        <div class="panel-thin">
+          <div class="panel-header"><span>Runs Successfully</span></div>
+          <div class="panel-body list">
+            <div><span>Latest</span><b id="metricRunsSuccessfully">—</b></div>
+            <div><span>Status</span><b id="metricRunsSuccessfullyStatus">—</b></div>
+            <div><span>Current Iteration</span><b id="metricCurrentIteration">—</b></div>
+          </div>
+        </div>
+
+        <div class="panel-thin">
+          <div class="panel-header"><span>Configuration</span></div>
+          <div class="panel-body list">
+            <div><span>Max Iterations</span><b id="qaMaxIterations">—</b></div>
+            <div><span>Checkpoint Interval</span><b id="qaCheckpointInterval">—</b></div>
+            <div><span>Population Size</span><b id="qaPopulationSize">—</b></div>
+            <div><span>Num Islands</span><b id="qaNumIslands">—</b></div>
+          </div>
+        </div>
+      </div>
+
+      <section class="hud-center">
+        <header class="center-header">
+          <div class="tabs">
+            <button class="tab" data-view="dynamic">Dynamic</button>
+            <button class="tab active" data-view="static">Static</button>
+            <button class="tab" data-view="focus">Focus</button>
+          </div>
+        </header>
+
+        <div id="dynamicDropzone" class="dynamic-dropzone" aria-label="Dynamic drop area">
+          <div class="dropzone-hint">Drag panels here in <b>Dynamic</b> mode</div>
+        </div>
+
+        <section class="card card-lg no-border">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="metric-label">Performance</span>
+              <h2 id="mainMetricTitle">Combined Score</h2>
+            </div>
+
+            <div class="zoom-controls" style="display:flex; gap:8px;">
+              <button id="zoomOutBtn" class="settings-btn" type="button" aria-label="Zoom out">−</button>
+              <button id="resetZoomBtn" class="settings-btn" type="button" aria-label="Reset zoom">⟲</button>
+              <button id="zoomInBtn" class="settings-btn" type="button" aria-label="Zoom in">+</button>
+            </div>
+          </div>
+
+          <div class="card-body tall">
+            <canvas id="chartPerformance" height="160"></canvas>
+          </div>
+        </section>
+
+        <section id="metricCardsGrid" class="grid-3"></section>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script src="assets/js/welcome.js"></script>
+    <script src="assets/js/script.js"></script>
+  </body>
+</html>

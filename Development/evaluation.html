@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evaluation</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+
+  <style>
+    .evaluation-main {
+      flex: 1;
+      min-width: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 18px 20px 28px;
+      background:
+        radial-gradient(circle at 50% 70%, rgba(255,255,255,0.03), transparent 26%),
+        linear-gradient(to bottom, #020202, #050505 45%, #040404);
+    }
+
+    .page-title {
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.8px;
+      margin: 0 0 8px;
+      color: #f1f1f1;
+    }
+
+    .page-subtitle {
+      margin: 0 0 22px;
+      font-size: 15px;
+      line-height: 1.45;
+      color: rgba(255,255,255,0.58);
+    }
+
+    .control-shell {
+      border-top: 1px solid rgba(255,255,255,0.10);
+      margin-top: 8px;
+      padding-top: 16px;
+      display: grid;
+      grid-template-columns: 1.1fr 1.8fr 180px;
+      gap: 20px;
+      align-items: end;
+    }
+
+    .field-block {
+      min-width: 0;
+    }
+
+    .field-label {
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.58);
+      margin-bottom: 8px;
+    }
+
+    .field-copy {
+      font-size: 13px;
+      line-height: 1.5;
+      color: rgba(255,255,255,0.78);
+    }
+
+    .field-sub {
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: rgba(255,255,255,0.48);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .path-input {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.03);
+      color: rgba(240,240,240,0.94);
+      padding: 11px 12px;
+      border-radius: 8px;
+      outline: none;
+      font-size: 13px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .path-input:focus {
+      border-color: rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .eval-btn {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.03);
+      color: rgba(240,240,240,0.94);
+      cursor: pointer;
+      transition: 0.15s ease;
+      padding: 11px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .eval-btn:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.16);
+    }
+
+    .eval-btn.primary {
+      background: rgba(255,255,255,0.10);
+    }
+
+    .eval-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .hero {
+      max-width: 860px;
+      margin: 70px auto 20px;
+      text-align: center;
+    }
+
+    .hero-kicker {
+      font-size: 24px;
+      letter-spacing: 2px;
+      color: rgba(255,255,255,0.58);
+      margin-bottom: 12px;
+    }
+
+    .hero-copy {
+      font-size: 18px;
+      line-height: 1.45;
+      color: rgba(255,255,255,0.58);
+      margin: 0 auto;
+      max-width: 900px;
+    }
+
+    .hero-copy strong {
+      color: #fff;
+    }
+
+    .status-panel,
+    .results-panel,
+    .chart-panel,
+    .table-panel {
+      max-width: 1180px;
+      margin: 28px auto 0;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.02);
+      padding: 18px;
+      border-radius: 12px;
+    }
+
+    .panel-title {
+      font-size: 11px;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: rgba(176,176,176,0.74);
+      margin-bottom: 10px;
+    }
+
+    .status-text {
+      font-size: 13px;
+      line-height: 1.6;
+      color: rgba(240,240,240,0.94);
+      white-space: pre-wrap;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .metric-card {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.025);
+      border-radius: 10px;
+      padding: 14px;
+      min-height: 96px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.52);
+      margin-bottom: 10px;
+    }
+
+    .metric-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #f4f4f4;
+      line-height: 1.15;
+      word-break: break-word;
+    }
+
+    .metric-note {
+      margin-top: 8px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.46);
+      line-height: 1.4;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 10px;
+    }
+
+    .chart-card {
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+      padding: 14px;
+    }
+
+    .chart-title {
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.62);
+      margin-bottom: 14px;
+    }
+
+    .chart-wrap {
+      height: 320px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      text-align: left;
+      vertical-align: top;
+      color: rgba(240,240,240,0.9);
+      white-space: nowrap;
+    }
+
+    th {
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.56);
+      background: rgba(255,255,255,0.03);
+      position: sticky;
+      top: 0;
+    }
+
+    .json-shell {
+      margin-top: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+      overflow: hidden;
+    }
+
+    .json-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 11px;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.58);
+    }
+
+    .json-viewer {
+      margin: 0;
+      padding: 14px;
+      max-height: 420px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 12px;
+      line-height: 1.5;
+      color: rgba(240,240,240,0.9);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .inline-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: rgba(255,255,255,0.82);
+    }
+
+    .empty-note {
+      font-size: 13px;
+      color: rgba(255,255,255,0.48);
+      margin-top: 8px;
+    }
+
+    .is-hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1100px) {
+      .control-shell,
+      .chart-grid,
+      .results-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        justify-content: flex-start;
+      }
+
+      .hero {
+        margin-top: 56px;
+      }
+
+      .evaluation-main {
+        padding: 16px 14px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="project-initials">SDA</span>
+      <span class="project-name">Analytics Console</span>
+    </div>
+
+    <nav class="nav">
+      <a id="openWelcomeBtn" class="nav-item" href="#" title="Open welcome">
+        <span class="icon"></span><span>Welcome</span>
+      </a>
+      <a class="nav-item" href="index.html"><span class="icon"></span><span>Dashboard</span></a>
+      <a class="nav-item" href="3DViewer.html"><span class="icon"></span><span>3DViewer [ALPHA]</span></a>
+      <a class="nav-item" href="mllm.html"><span class="icon"></span><span>mLLM</span></a>
+      <a class="nav-item active" href="evaluation.html"><span class="icon"></span><span>Evaluation [BETA]</span></a>
+      <a class="nav-item" href="documentation.html"><span class="icon"></span><span>Documentation</span></a>
+      <a class="nav-item" href="settings.html"><span class="icon"></span><span>Settings</span></a>
+    </nav>
+  </aside>
+
+  <main class="evaluation-main">
+    <h1 class="page-title">Evaluation</h1>
+    <p class="page-subtitle">
+      Enter the <span class="inline-code">raw_results.json</span> path, or leave it blank to use the server default search locations.
+    </p>
+
+    <section class="control-shell">
+      <div class="field-block">
+        <div class="field-label">Raw Results JSON</div>
+        <div class="field-copy">
+          This page reads the combined evaluation output created by <span class="inline-code">evaluationReport(...)</span>.
+        </div>
+        <div class="field-sub">
+          It uses the same data fields that <span class="inline-code">generatePDF.py</span> uses for the PDF charts.
+        </div>
+      </div>
+
+      <div class="field-block">
+        <input
+          id="rawResultsPathInput"
+          class="path-input"
+          type="text"
+          spellcheck="false"
+          placeholder="Optional: enter raw_results.json path"
+          value=""
+        />
+        <div id="currentPathText" class="field-sub"></div>
+      </div>
+
+      <div class="actions">
+        <button class="eval-btn primary" id="loadResultsBtn" type="button">Load Results</button>
+        <button class="eval-btn" id="clearResultsBtn" type="button">Clear</button>
+      </div>
+    </section>
+
+    <section class="hero">
+      <div class="hero-kicker">SDA TAP LAB</div>
+      <p class="hero-copy">
+        Load <strong>raw_results.json</strong>, then render the same residual charts, summary values,
+        and tables that the PDF report uses.
+      </p>
+    </section>
+
+    <section class="status-panel">
+      <div class="panel-title">Execution Log</div>
+      <div id="logBox" class="status-text">Ready.</div>
+    </section>
+
+    <section class="results-panel">
+      <div class="panel-title">Evaluation Summary</div>
+
+      <div class="results-grid">
+        <div class="metric-card">
+          <div class="metric-label">Association Fields</div>
+          <div id="metricAssociationCount" class="metric-value">—</div>
+          <div class="metric-note">Number of association result fields returned.</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">Binary Rows</div>
+          <div id="metricBinaryCount" class="metric-value">—</div>
+          <div class="metric-note">Rows in the binary results section.</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">Reference Residual Orbits</div>
+          <div id="metricRefResidualCount" class="metric-value">—</div>
+          <div class="metric-note">Number of reference residual entries.</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">Candidate Residual Orbits</div>
+          <div id="metricCandResidualCount" class="metric-value">—</div>
+          <div class="metric-note">Number of candidate residual entries.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chart-panel">
+      <div class="panel-title">Residual Charts</div>
+
+      <div class="chart-grid">
+        <div class="chart-card" id="refLineCard">
+          <div class="chart-title">Reference Orbit Residuals</div>
+          <div class="chart-wrap">
+            <canvas id="residualRefLineChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card" id="candLineCard">
+          <div class="chart-title">Candidate Orbit Residuals</div>
+          <div class="chart-wrap">
+            <canvas id="residualCandLineChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card" id="refBarCard">
+          <div class="chart-title">Mean Reference Residuals with Standard Deviation</div>
+          <div class="chart-wrap">
+            <canvas id="residualRefBarChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card" id="candBarCard">
+          <div class="chart-title">Mean Candidate Residuals with Standard Deviation</div>
+          <div class="chart-wrap">
+            <canvas id="residualCandBarChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div id="chartEmptyNote" class="empty-note">Load raw results to populate the charts.</div>
+    </section>
+
+    <section class="table-panel">
+      <div class="panel-title">Association Results</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody id="associationTableBody">
+            <tr><td colspan="2">Load raw results to populate the table.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel-title" style="margin-top:18px;">Reference Residual Summary</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Orbit</th>
+              <th>RMSE</th>
+              <th>Mean</th>
+              <th>Std Deviation</th>
+            </tr>
+          </thead>
+          <tbody id="refResidualTableBody">
+            <tr><td colspan="4">Load raw results to populate the table.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel-title" style="margin-top:18px;">Candidate Residual Summary</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Orbit</th>
+              <th>RMSE</th>
+              <th>Mean</th>
+              <th>Std Deviation</th>
+            </tr>
+          </thead>
+          <tbody id="candResidualTableBody">
+            <tr><td colspan="4">Load raw results to populate the table.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="json-shell">
+        <div class="json-header">Loaded Raw Results JSON</div>
+        <pre id="jsonViewer" class="json-viewer">No raw results loaded yet.</pre>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const rawResultsPathInput = document.getElementById('rawResultsPathInput');
+      const currentPathText = document.getElementById('currentPathText');
+      const loadResultsBtn = document.getElementById('loadResultsBtn');
+      const clearResultsBtn = document.getElementById('clearResultsBtn');
+      const logBox = document.getElementById('logBox');
+
+      const metricAssociationCount = document.getElementById('metricAssociationCount');
+      const metricBinaryCount = document.getElementById('metricBinaryCount');
+      const metricRefResidualCount = document.getElementById('metricRefResidualCount');
+      const metricCandResidualCount = document.getElementById('metricCandResidualCount');
+
+      const associationTableBody = document.getElementById('associationTableBody');
+      const refResidualTableBody = document.getElementById('refResidualTableBody');
+      const candResidualTableBody = document.getElementById('candResidualTableBody');
+      const chartEmptyNote = document.getElementById('chartEmptyNote');
+      const jsonViewer = document.getElementById('jsonViewer');
+
+      const residualRefLineCanvas = document.getElementById('residualRefLineChart');
+      const residualCandLineCanvas = document.getElementById('residualCandLineChart');
+      const residualRefBarCanvas = document.getElementById('residualRefBarChart');
+      const residualCandBarCanvas = document.getElementById('residualCandBarChart');
+
+      const refLineCard = document.getElementById('refLineCard');
+      const candLineCard = document.getElementById('candLineCard');
+      const refBarCard = document.getElementById('refBarCard');
+      const candBarCard = document.getElementById('candBarCard');
+
+      let residualRefLineChart = null;
+      let residualCandLineChart = null;
+      let residualRefBarChart = null;
+      let residualCandBarChart = null;
+
+      function setLog(text) {
+        logBox.textContent = text;
+      }
+
+      function updatePathPreview() {
+        const rawPath = rawResultsPathInput.value.trim();
+        currentPathText.textContent = rawPath
+          ? `Raw Results:\n${rawPath}`
+          : 'Raw Results:\n[server will use default search locations]';
+      }
+
+      function toPrettyJson(value) {
+        try {
+          return JSON.stringify(value, null, 2);
+        } catch (_) {
+          return String(value);
+        }
+      }
+
+      function resetMetricCards() {
+        metricAssociationCount.textContent = '—';
+        metricBinaryCount.textContent = '—';
+        metricRefResidualCount.textContent = '—';
+        metricCandResidualCount.textContent = '—';
+      }
+
+      function destroyCharts() {
+        [residualRefLineChart, residualCandLineChart, residualRefBarChart, residualCandBarChart].forEach(chart => {
+          if (chart) chart.destroy();
+        });
+        residualRefLineChart = null;
+        residualCandLineChart = null;
+        residualRefBarChart = null;
+        residualCandBarChart = null;
+      }
+
+      function resetResults() {
+        resetMetricCards();
+        destroyCharts();
+
+        refLineCard.classList.remove('is-hidden');
+        candLineCard.classList.remove('is-hidden');
+        refBarCard.classList.remove('is-hidden');
+        candBarCard.classList.remove('is-hidden');
+
+        associationTableBody.innerHTML = '<tr><td colspan="2">Load raw results to populate the table.</td></tr>';
+        refResidualTableBody.innerHTML = '<tr><td colspan="4">Load raw results to populate the table.</td></tr>';
+        candResidualTableBody.innerHTML = '<tr><td colspan="4">Load raw results to populate the table.</td></tr>';
+        jsonViewer.textContent = 'No raw results loaded yet.';
+        chartEmptyNote.textContent = 'Load raw results to populate the charts.';
+      }
+
+      function formatEpochLabel(epoch) {
+        if (!epoch) return '';
+        const d = new Date(epoch);
+        if (Number.isNaN(d.getTime())) return String(epoch);
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const min = String(d.getMinutes()).padStart(2, '0');
+        return `${mm}-${dd} ${hh}:${min}`;
+      }
+
+      function normalizeNumber(value) {
+        if (value === null || typeof value === 'undefined' || value === '') return null;
+        const num = Number(value);
+        return Number.isFinite(num) ? num : null;
+      }
+
+      function buildAssociationTable(associationResults) {
+        if (!associationResults || typeof associationResults !== 'object') {
+          associationTableBody.innerHTML = '<tr><td colspan="2">No association results found.</td></tr>';
+          return;
+        }
+
+        const rows = Object.entries(associationResults).map(([key, value]) => {
+          return `<tr><td>${key}</td><td>${value == null ? '' : String(value)}</td></tr>`;
+        }).join('');
+
+        associationTableBody.innerHTML = rows || '<tr><td colspan="2">No association results found.</td></tr>';
+      }
+
+      function buildResidualSummaryTable(tbody, residualRows) {
+        if (!Array.isArray(residualRows) || !residualRows.length) {
+          tbody.innerHTML = '<tr><td colspan="4">No residual summary found.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = residualRows.map((row, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${row?.RMSE ?? ''}</td>
+            <td>${row?.Mean ?? ''}</td>
+            <td>${row?.std ?? ''}</td>
+          </tr>
+        `).join('');
+      }
+
+      function buildCategoryLineChart(canvas, residualRows) {
+        if (!Array.isArray(residualRows) || !residualRows.length) return null;
+
+        const allEpochs = [];
+        residualRows.forEach(row => {
+          const epochs = Array.isArray(row?.Epoch) ? row.Epoch : [];
+          const residuals = Array.isArray(row?.Residuals) ? row.Residuals : [];
+          if (!epochs.length || !residuals.length) return;
+
+          epochs.forEach((epoch, i) => {
+            if (normalizeNumber(residuals[i]) !== null && !allEpochs.includes(epoch)) {
+              allEpochs.push(epoch);
+            }
+          });
+        });
+
+        if (!allEpochs.length) return null;
+
+        allEpochs.sort((a, b) => {
+          const da = new Date(a).getTime();
+          const db = new Date(b).getTime();
+          if (Number.isNaN(da) || Number.isNaN(db)) return String(a).localeCompare(String(b));
+          return da - db;
+        });
+
+        const labels = allEpochs.map(formatEpochLabel);
+
+        const datasets = residualRows.map((row, rowIndex) => {
+          const epochs = Array.isArray(row?.Epoch) ? row.Epoch : [];
+          const residuals = Array.isArray(row?.Residuals) ? row.Residuals : [];
+          const map = new Map();
+
+          epochs.forEach((epoch, index) => {
+            const value = normalizeNumber(residuals[index]);
+            if (value !== null) {
+              map.set(epoch, value);
+            }
+          });
+
+          const data = allEpochs.map(epoch => map.has(epoch) ? map.get(epoch) : null);
+
+          return {
+            label: String(rowIndex + 1),
+            data,
+            pointRadius: 3,
+            pointHoverRadius: 4,
+            borderWidth: 2,
+            tension: 0,
+            spanGaps: false,
+            fill: false
+          };
+        }).filter(dataset => dataset.data.some(v => v !== null));
+
+        if (!datasets.length) return null;
+
+        return new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels,
+            datasets
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: {
+              legend: {
+                labels: { color: 'rgba(255,255,255,0.78)' }
+              }
+            },
+            scales: {
+              x: {
+                ticks: {
+                  color: 'rgba(255,255,255,0.72)',
+                  maxRotation: 50,
+                  minRotation: 50
+                },
+                grid: { color: 'rgba(255,255,255,0.08)' },
+                title: {
+                  display: true,
+                  text: 'epoch',
+                  color: 'rgba(255,255,255,0.72)'
+                }
+              },
+              y: {
+                ticks: { color: 'rgba(255,255,255,0.72)' },
+                grid: { color: 'rgba(255,255,255,0.08)' },
+                title: {
+                  display: true,
+                  text: 'rad',
+                  color: 'rgba(255,255,255,0.72)'
+                }
+              }
+            }
+          }
+        });
+      }
+
+      function buildResidualBarChart(canvas, title, residualRows) {
+        if (!Array.isArray(residualRows) || !residualRows.length) return null;
+
+        const cleanRows = residualRows.map((row, index) => ({
+          label: String(index + 1),
+          mean: normalizeNumber(row?.Mean),
+          std: normalizeNumber(row?.std)
+        })).filter(row => row.mean !== null);
+
+        if (!cleanRows.length) return null;
+
+        const labels = cleanRows.map(row => row.label);
+        const means = cleanRows.map(row => row.mean);
+        const stds = cleanRows.map(row => row.std ?? 0);
+
+        const errorBarPlugin = {
+          id: 'errorBars',
+          afterDatasetsDraw(chart) {
+            const { ctx, scales: { y } } = chart;
+            const meta = chart.getDatasetMeta(0);
+
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+            ctx.lineWidth = 1.25;
+
+            meta.data.forEach((bar, index) => {
+              const mean = means[index];
+              const std = stds[index];
+              const top = y.getPixelForValue(mean + std);
+              const bottom = y.getPixelForValue(mean - std);
+              const x = bar.x;
+              const cap = 6;
+
+              ctx.beginPath();
+              ctx.moveTo(x, top);
+              ctx.lineTo(x, bottom);
+              ctx.moveTo(x - cap, top);
+              ctx.lineTo(x + cap, top);
+              ctx.moveTo(x - cap, bottom);
+              ctx.lineTo(x + cap, bottom);
+              ctx.stroke();
+            });
+
+            ctx.restore();
+          }
+        };
+
+        return new Chart(canvas, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: title,
+              data: means,
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              x: {
+                ticks: { color: 'rgba(255,255,255,0.72)' },
+                grid: { color: 'rgba(255,255,255,0.08)' },
+                title: {
+                  display: true,
+                  text: 'Orbit Number',
+                  color: 'rgba(255,255,255,0.72)'
+                }
+              },
+              y: {
+                beginAtZero: true,
+                ticks: { color: 'rgba(255,255,255,0.72)' },
+                grid: { color: 'rgba(255,255,255,0.08)' },
+                title: {
+                  display: true,
+                  text: 'Rad',
+                  color: 'rgba(255,255,255,0.72)'
+                }
+              }
+            }
+          },
+          plugins: [errorBarPlugin]
+        });
+      }
+
+      function setChartVisibility(card, chartInstance) {
+        if (chartInstance) {
+          card.classList.remove('is-hidden');
+        } else {
+          card.classList.add('is-hidden');
+        }
+      }
+
+      function renderCharts(payload) {
+        destroyCharts();
+
+        residualRefLineChart = buildCategoryLineChart(
+          residualRefLineCanvas,
+          payload.residual_ref_results
+        );
+
+        residualCandLineChart = buildCategoryLineChart(
+          residualCandLineCanvas,
+          payload.residual_cand_results
+        );
+
+        residualRefBarChart = buildResidualBarChart(
+          residualRefBarCanvas,
+          'Mean Reference Residuals with Standard Deviation',
+          payload.residual_ref_results
+        );
+
+        residualCandBarChart = buildResidualBarChart(
+          residualCandBarCanvas,
+          'Mean Candidate Residuals with Standard Deviation',
+          payload.residual_cand_results
+        );
+
+        setChartVisibility(refLineCard, residualRefLineChart);
+        setChartVisibility(candLineCard, residualCandLineChart);
+        setChartVisibility(refBarCard, residualRefBarChart);
+        setChartVisibility(candBarCard, residualCandBarChart);
+
+        const visibleCount = [
+          residualRefLineChart,
+          residualCandLineChart,
+          residualRefBarChart,
+          residualCandBarChart
+        ].filter(Boolean).length;
+
+        if (visibleCount === 0) {
+          chartEmptyNote.textContent = 'No chart data was available.';
+        } else if (visibleCount < 4) {
+          chartEmptyNote.textContent = 'Some charts were hidden because their data was missing or invalid.';
+        } else {
+          chartEmptyNote.textContent = 'Charts updated from raw_results.json.';
+        }
+      }
+
+      rawResultsPathInput.addEventListener('input', updatePathPreview);
+
+      clearResultsBtn.addEventListener('click', () => {
+        rawResultsPathInput.value = '';
+        updatePathPreview();
+        setLog('Cleared current results.');
+        resetResults();
+      });
+
+      loadResultsBtn.addEventListener('click', async () => {
+        const rawResultsPath = rawResultsPathInput.value.trim();
+
+        try {
+          loadResultsBtn.disabled = true;
+          setLog(
+            rawResultsPath
+              ? `Loading raw results from:\n${rawResultsPath}`
+              : 'Loading raw results using server default search locations...'
+          );
+
+          const body = rawResultsPath ? { rawResultsPath } : {};
+
+          const response = await fetch('/api/evaluation/raw-results', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+
+          const payload = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            throw new Error(payload.message || `HTTP ${response.status}`);
+          }
+
+          metricAssociationCount.textContent = payload.association_results ? Object.keys(payload.association_results).length : '—';
+          metricBinaryCount.textContent = Array.isArray(payload.binary_results) ? payload.binary_results.length : '—';
+          metricRefResidualCount.textContent = Array.isArray(payload.residual_ref_results) ? payload.residual_ref_results.length : '—';
+          metricCandResidualCount.textContent = Array.isArray(payload.residual_cand_results) ? payload.residual_cand_results.length : '—';
+
+          buildAssociationTable(payload.association_results);
+          buildResidualSummaryTable(refResidualTableBody, payload.residual_ref_results);
+          buildResidualSummaryTable(candResidualTableBody, payload.residual_cand_results);
+          renderCharts(payload);
+
+          jsonViewer.textContent = toPrettyJson(payload);
+          setLog(
+            `${payload.message || 'Raw results loaded successfully.'}\n\nLoaded from:\n${payload.raw_results_path || '[server default search path]'}`
+          );
+        } catch (error) {
+          setLog(`Load failed: ${error.message}`);
+          jsonViewer.textContent = `Error:\n${error.message}`;
+          destroyCharts();
+        } finally {
+          loadResultsBtn.disabled = false;
+        }
+      });
+
+      updatePathPreview();
+      resetResults();
+    })();
+  </script>
+</body>
+</html>
