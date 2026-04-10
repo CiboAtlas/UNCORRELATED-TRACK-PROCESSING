@@ -26,7 +26,7 @@ Ruben Dennis<br>
 Aaron Nogues<br> 
 Ezra Stone<br> 
 
-# Contributers
+# Advisor
 Dr. Richard Leinecker, Associate Lecturer<br> 
 
 # Citations
