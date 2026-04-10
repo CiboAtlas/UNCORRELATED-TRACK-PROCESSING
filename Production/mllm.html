@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics Console — Chatbot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+
+    <style>
+      .chatbot-shell{
+        min-height:100vh;
+        background:var(--bg);
+        color:var(--text);
+        overflow:auto;
+      }
+
+      .chatbot-page{
+        padding:18px 16px 28px;
+      }
+
+      .chatbot-topbar{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        margin-bottom:10px;
+      }
+
+      .chatbot-header-row{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:16px;
+        margin-bottom:22px;
+      }
+
+      .chatbot-title{
+        margin:0;
+        font-size:clamp(30px, 4vw, 44px);
+        line-height:1.05;
+        font-weight:800;
+        letter-spacing:-.02em;
+        color:var(--text);
+      }
+
+      .chatbot-subtitle{
+        margin:8px 0 0;
+        color:var(--muted);
+        font-size:14px;
+      }
+
+      .chatbot-layout{
+        display:grid;
+        grid-template-columns:minmax(260px, 320px) minmax(0, 1fr);
+        gap:18px;
+        min-height:calc(100vh - 140px);
+      }
+
+      .chatbot-side,
+      .chatbot-main{
+        min-width:0;
+      }
+
+      .chatbot-card{
+        background:var(--panel);
+        border:1px solid var(--border);
+        border-radius:18px;
+        overflow:hidden;
+      }
+
+      .chatbot-card-header{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        padding:16px 18px 12px;
+        border-bottom:1px solid rgba(255,255,255,.06);
+      }
+
+      .chatbot-card-title{
+        font-size:16px;
+        font-weight:700;
+        color:var(--text);
+      }
+
+      .chatbot-card-body{
+        padding:16px 18px 18px;
+      }
+
+      .chatbot-side .chatbot-card + .chatbot-card{
+        margin-top:18px;
+      }
+
+      .chatbot-status-list{
+        display:grid;
+        gap:12px;
+      }
+
+      .chatbot-status-item{
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        font-size:14px;
+        padding-bottom:10px;
+        border-bottom:1px dashed rgba(255,255,255,.08);
+      }
+
+      .chatbot-status-item:last-child{
+        border-bottom:none;
+        padding-bottom:0;
+      }
+
+      .chatbot-status-item span{
+        color:var(--muted);
+      }
+
+      .chatbot-status-item b{
+        color:var(--text);
+        font-weight:700;
+      }
+
+      .chatbot-suggestions{
+        display:grid;
+        gap:10px;
+      }
+
+      .chatbot-suggestion-btn{
+        width:100%;
+        text-align:left;
+        border:1px solid var(--border);
+        background:rgba(255,255,255,.03);
+        color:var(--text);
+        border-radius:14px;
+        padding:12px 14px;
+        font:inherit;
+        cursor:pointer;
+        transition:background .18s ease, border-color .18s ease;
+      }
+
+      .chatbot-suggestion-btn:hover{
+        background:rgba(255,255,255,.06);
+        border-color:rgba(255,255,255,.14);
+      }
+
+      .chatbot-main-card{
+        display:flex;
+        flex-direction:column;
+        min-height:calc(100vh - 190px);
+      }
+
+      .chatbot-messages{
+        flex:1 1 auto;
+        min-height:420px;
+        max-height:calc(100vh - 320px);
+        overflow:auto;
+        padding:18px;
+        display:grid;
+        gap:14px;
+      }
+
+      .chatbot-message{
+        display:flex;
+        gap:12px;
+        align-items:flex-start;
+      }
+
+      .chatbot-avatar{
+        flex:0 0 38px;
+        width:38px;
+        height:38px;
+        border-radius:12px;
+        display:grid;
+        place-items:center;
+        background:rgba(255,255,255,.08);
+        color:var(--text);
+        font-weight:800;
+        font-size:14px;
+      }
+
+      .chatbot-bubble{
+        max-width:min(820px, 100%);
+        background:rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.07);
+        border-radius:16px;
+        padding:12px 14px;
+        line-height:1.6;
+        font-size:14px;
+        color:var(--text);
+        white-space:pre-wrap;
+        word-break:break-word;
+      }
+
+      .chatbot-message.user{
+        justify-content:flex-end;
+      }
+
+      .chatbot-message.user .chatbot-avatar{
+        order:2;
+        background:rgba(255,255,255,.14);
+      }
+
+      .chatbot-message.user .chatbot-bubble{
+        order:1;
+        background:rgba(255,255,255,.08);
+      }
+
+      .chatbot-input-wrap{
+        border-top:1px solid rgba(255,255,255,.06);
+        padding:16px 18px 18px;
+        display:grid;
+        gap:12px;
+      }
+
+      .chatbot-input-row{
+        display:grid;
+        grid-template-columns:minmax(0, 1fr) auto;
+        gap:12px;
+        align-items:end;
+      }
+
+      .chatbot-input{
+        width:100%;
+        min-height:54px;
+        max-height:180px;
+        resize:vertical;
+        border-radius:14px;
+        border:1px solid rgba(255,255,255,.14);
+        background:#121314;
+        color:var(--text);
+        padding:14px 14px;
+        font:inherit;
+        outline:none;
+      }
+
+      .chatbot-input:focus{
+        border-color:rgba(255,255,255,.3);
+      }
+
+      .chatbot-send-btn{
+        border:none;
+        border-radius:14px;
+        padding:13px 18px;
+        font:inherit;
+        font-weight:700;
+        background:rgba(255,255,255,.1);
+        color:var(--text);
+        cursor:pointer;
+      }
+
+      .chatbot-send-btn:hover{
+        background:rgba(255,255,255,.16);
+      }
+
+      .chatbot-help{
+        color:var(--muted);
+        font-size:12px;
+      }
+
+      .chatbot-messages::-webkit-scrollbar{
+        width:10px;
+      }
+
+      .chatbot-messages::-webkit-scrollbar-track{
+        background:transparent;
+        margin:6px 0;
+      }
+
+      .chatbot-messages::-webkit-scrollbar-thumb{
+        background:rgba(255,255,255,.22);
+        border-radius:999px;
+        border:2px solid transparent;
+        background-clip:padding-box;
+      }
+
+      @media (max-width: 980px){
+        .chatbot-layout{
+          grid-template-columns:1fr;
+        }
+
+        .chatbot-main-card{
+          min-height:auto;
+        }
+
+        .chatbot-messages{
+          max-height:none;
+          min-height:360px;
+        }
+
+        .chatbot-header-row{
+          flex-direction:column;
+          align-items:flex-start;
+        }
+      }
+
+      @media (max-width: 680px){
+        .chatbot-page{
+          padding:16px 12px 24px;
+        }
+
+        .chatbot-input-row{
+          grid-template-columns:1fr;
+        }
+
+        .chatbot-send-btn{
+          width:100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="project-initials">SDA</span>
+        <span class="project-name">Analytics Console</span>
+      </div>
+
+      <nav class="nav">
+        <a id="openWelcomeBtn" class="nav-item" href="index.html?welcome=1" title="Open welcome">
+          <span class="icon"></span><span>Welcome</span>
+        </a>
+        <a class="nav-item" href="index.html">
+          <span class="icon"></span><span>Dashboard</span>
+        </a>      
+        <a class="nav-item active" href="mllm.html">
+          <span class="icon"></span><span>mLLM</span>
+        </a>
+        <a class="nav-item" href="evaluation.html">
+          <span class="icon"></span><span>Evaluation [BETA]</span>
+        </a>
+        <a class="nav-item" href="documentation.html">
+          <span class="icon"></span><span>Documentation</span>
+        </a>
+        <a class="nav-item" href="settings.html">
+          <span class="icon"></span><span>Settings</span>
+        </a>
+      </nav>
+    </aside>
+
+    <main class="chatbot-shell">
+      <section class="chatbot-page">
+        <div class="chatbot-topbar"></div>
+
+        <div class="chatbot-header-row">
+          <div>
+            <h1 class="chatbot-title">mini Large Language Model</h1>
+            <p class="chatbot-subtitle">Ask questions about the Analytics Console, OpenEvolve data, current workflow, or code generation.</p>
+          </div>
+        </div>
+
+        <div class="chatbot-layout">
+          <aside class="chatbot-side">
+            <section class="chatbot-card">
+              <div class="chatbot-card-header">
+                <div class="chatbot-card-title">Session</div>
+              </div>
+              <div class="chatbot-card-body">
+                <div class="chatbot-status-list">
+                  <div class="chatbot-status-item">
+                    <span>Mode</span>
+                    <b>Assistant</b>
+                  </div>
+                  <div class="chatbot-status-item">
+                    <span>Status</span>
+                    <b>Not Ready</b>
+                  </div>
+                  <div class="chatbot-status-item">
+                    <span>Context</span>
+                    <b>Analytics Console</b>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="chatbot-card">
+              <div class="chatbot-card-header">
+                <div class="chatbot-card-title">Suggestions</div>
+              </div>
+              <div class="chatbot-card-body">
+                <div class="chatbot-suggestions">
+                  <button class="chatbot-suggestion-btn" type="button" data-prompt="What is the status of the Large Language Model?">
+                    What is the status of the Large Language Model?
+                  </button>
+                  <button class="chatbot-suggestion-btn" type="button" data-prompt="What do the dashboard metrics mean?">
+                    What do the dashboard metrics mean?
+                  </button>
+                  <button class="chatbot-suggestion-btn" type="button" data-prompt="Explain the OpenEvolve log panel.">
+                    Explain the OpenEvolve log panel.
+                  </button>
+                  <button class="chatbot-suggestion-btn" type="button" data-prompt="Where does the configuration panel pull data from?">
+                    Where does the configuration panel pull data from?
+                  </button>
+                  <button class="chatbot-suggestion-btn" type="button" data-prompt="How do I change checkpoint and logs paths?">
+                    How do I change checkpoint and logs paths?
+                  </button>
+                </div>
+              </div>
+            </section>
+          </aside>
+
+          <section class="chatbot-main">
+            <section class="chatbot-card chatbot-main-card">
+              <div class="chatbot-card-header">
+                <div class="chatbot-card-title">Assistant Chat</div>
+              </div>
+
+              <div class="chatbot-messages" id="chatMessages">
+                <div class="chatbot-message">
+                  <div class="chatbot-avatar">AI</div>
+                  <div class="chatbot-bubble">
+Hi — I can help explain the dashboard, OpenEvolve metrics, logs, configuration, and page navigation.
+
+Try asking something like:
+• What does Combined Score mean?
+• How does the OpenEvolve log update?
+• Where can I change the logs path?
+                  </div>
+                </div>
+              </div>
+
+              <div class="chatbot-input-wrap">
+                <div class="chatbot-input-row">
+                  <textarea
+                    id="chatInput"
+                    class="chatbot-input"
+                    placeholder="Type your message..."
+                  ></textarea>
+                  <button id="sendChatBtn" class="chatbot-send-btn" type="button">Send</button>
+                </div>
+                <div class="chatbot-help">
+                  This page is a local UI shell. Hook it to your backend or chatbot endpoint if you want live responses.
+                </div>
+              </div>
+            </section>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (function () {
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendChatBtn = document.getElementById('sendChatBtn');
+        const suggestionButtons = document.querySelectorAll('.chatbot-suggestion-btn');
+
+        function addMessage(role, text) {
+          const row = document.createElement('div');
+          row.className = `chatbot-message${role === 'user' ? ' user' : ''}`;
+
+          const avatar = document.createElement('div');
+          avatar.className = 'chatbot-avatar';
+          avatar.textContent = role === 'user' ? 'You' : 'AI';
+
+          const bubble = document.createElement('div');
+          bubble.className = 'chatbot-bubble';
+          bubble.textContent = text;
+
+          row.appendChild(avatar);
+          row.appendChild(bubble);
+          chatMessages.appendChild(row);
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function buildLocalReply(prompt) {
+          const text = prompt.toLowerCase();
+
+          if (text.includes('large language model') || text.includes('llm')) {
+            return 'The Large Language Model (LLM) is currently still under development. This page serves as a template for integrating an LLM-powered assistant that can provide real-time insights, explanations about the dashboard, OpenEvolve data, and automatic code generation for initial programs and evaluator files. Currently the model is based off of Karpathy\'s nanochat LLM training harness which will be fine tuned on custom data sets related to uncorrelated track processing.\n\nThe LLM is currently trained under 4 hours using a Nvidia 3060ti GPU dataset and is currently in early stages of response quality. In order to reach the best performance possible, the LLM will need to be trained under x8 H100 GPUs for approximately 3-4 hours. Costing around 60-100 dollars of training time, this training is used to reach GPT 2.0 performance which can be fine-tuned for better performance in the future with higher quality data processing in the pre-processing stage.';
+          }
+
+          if (text.includes('combined score')) {
+            return 'Combined Score is the main summary metric shown in the center chart. It typically reflects the top-level optimization score being tracked across iterations.';
+          }
+
+          if (text.includes('log')) {
+            return 'The OpenEvolve Log panel shows the newest log file pulled from the configured logs directory. The path can be changed from the Settings page under OpenEvolve Logs.';
+          }
+
+          if (text.includes('config') || text.includes('configuration')) {
+            return 'The Configuration panel reads values like max iterations, checkpoint interval, population size, and number of islands from the configured YAML file path.';
+          }
+
+          if (text.includes('checkpoint') || text.includes('path')) {
+            return 'Checkpoint, config, and logs paths are managed from the Settings page. Each path controls which files and folders the dashboard uses as its data sources.';
+          }
+
+          if (text.includes('documentation')) {
+            return 'You can open the Documentation page from the left sidebar. It uses the same navigation style as the dashboard, chatbot, and settings pages.';
+          }
+
+          return 'I received your message. This local chatbot shell is ready for custom backend integration if you want live responses from your own assistant endpoint.';
+        }
+
+        function submitPrompt(prompt) {
+          const value = String(prompt || '').trim();
+          if (!value) return;
+
+          addMessage('user', value);
+          chatInput.value = '';
+
+          const reply = buildLocalReply(value);
+          window.setTimeout(() => {
+            addMessage('assistant', reply);
+          }, 160);
+        }
+
+        sendChatBtn.addEventListener('click', function () {
+          submitPrompt(chatInput.value);
+        });
+
+        chatInput.addEventListener('keydown', function (event) {
+          if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            submitPrompt(chatInput.value);
+          }
+        });
+
+        suggestionButtons.forEach(function (button) {
+          button.addEventListener('click', function () {
+            submitPrompt(button.dataset.prompt || button.textContent);
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>
