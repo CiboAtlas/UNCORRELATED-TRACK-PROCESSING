@@ -24,7 +24,10 @@ Kyle Francis Galang<br>
 Aurela Broqi<br> 
 Ruben Dennis<br> 
 Aaron Nogues<br> 
-Ezra Stone
+Ezra Stone<br> 
+
+# Contributers
+Dr. Richard Leinecker, Associate Lecturer<br> 
 
 # Citations
 @software{openevolve,<br> 
