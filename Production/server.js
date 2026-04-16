@@ -1,967 +1,285 @@
-'use strict';
-
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
-const YAML = require('yaml');
-const { spawn } = require('child_process');
-require('dotenv').config();
-
-const app = express();
-
-/* =========================
-   APP CONFIG
-========================= */
-
-app.use(express.static(path.join(__dirname)));
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-
-const APP = {
-  port: Number(process.env.PORT) || 3000
-};
-
-/*
-  PORTABLE DEFAULTS
-  -----------------
-  Do NOT hardcode personal PC paths here.
-*/
-const DEFAULTS = {
-  checkpointsDir: process.env.OPENEVOLVE_CHECKPOINTS_DIR || '',
-  configYamlPath: process.env.OPENEVOLVE_CONFIG_PATH || '',
-  logsDir: process.env.OPENEVOLVE_LOGS_DIR || '',
-  datasetJsonPath:
-    process.env.DASHBOARD_DATASET_JSON_PATH ||
-    '/assets/UCT-benchmarking/data/dataset_1Object_100Obs.json'
-};
-
-const SETTINGS_FILE =
-  process.env.APP_SETTINGS_FILE ||
-  path.join(__dirname, 'app-settings.json');
-
-/* =========================
-   SMALL UTILITIES
-========================= */
-
-function safeNumber(value) {
-  const num = Number(value);
-  return Number.isFinite(num) ? num : null;
-}
-
-function normalizeMetrics(metrics) {
-  if (!metrics || typeof metrics !== 'object' || Array.isArray(metrics)) {
-    return {};
-  }
-
-  const out = {};
-  for (const [key, value] of Object.entries(metrics)) {
-    const n = safeNumber(value);
-    out[key] = n != null ? n : value;
-  }
-  return out;
-}
-
-function pathExists(p) {
-  try {
-    fs.accessSync(p);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function isFile(p) {
-  try {
-    return fs.statSync(p).isFile();
-  } catch {
-    return false;
-  }
-}
-
-function isDirectory(p) {
-  try {
-    return fs.statSync(p).isDirectory();
-  } catch {
-    return false;
-  }
-}
-
-function ensureExists(targetPath, messagePrefix = 'Path does not exist') {
-  if (!fs.existsSync(targetPath)) {
-    const error = new Error(`${messagePrefix}: ${targetPath}`);
-    error.status = 400;
-    throw error;
-  }
-}
-
-function safeResolvePath(inputPath, fallbackBase = __dirname) {
-  if (!inputPath || typeof inputPath !== 'string') {
-    return null;
-  }
-
-  const trimmed = inputPath.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  return path.isAbsolute(trimmed)
-    ? path.normalize(trimmed)
-    : path.normalize(path.join(fallbackBase, trimmed));
-}
-
-function resolveMaybeRelativePath(inputPath) {
-  const trimmed = String(inputPath || '').trim();
-
-  if (!trimmed) {
-    const error = new Error('Please provide a non-empty path');
-    error.status = 400;
-    error.code = 'Missing path';
-    throw error;
-  }
-
-  const resolved = path.isAbsolute(trimmed)
-    ? path.normalize(trimmed)
-    : path.resolve(__dirname, trimmed);
-
-  if (!pathExists(resolved)) {
-    const error = new Error(`Path does not exist: ${resolved}`);
-    error.status = 400;
-    error.code = 'Invalid path';
-    throw error;
-  }
-
-  return resolved;
-}
-
-function ensureYamlFilePath(inputPath, fallbackBase = __dirname) {
-  const resolved = safeResolvePath(inputPath, fallbackBase);
-  if (!resolved) {
-    const error = new Error('Please provide a non-empty config_yaml_path');
-    error.status = 400;
-    error.code = 'Invalid config path';
-    throw error;
-  }
-
-  if (isDirectory(resolved)) {
-    const yaml1 = path.join(resolved, 'config.yaml');
-    const yaml2 = path.join(resolved, 'config.yml');
-
-    if (isFile(yaml1)) return yaml1;
-    if (isFile(yaml2)) return yaml2;
-
-    const error = new Error(
-      `Config path is a directory and does not contain config.yaml or config.yml: ${resolved}`
-    );
-    error.status = 400;
-    error.code = 'Invalid config path';
-    throw error;
-  }
-
-  if (!isFile(resolved)) {
-    const error = new Error(`Config file does not exist: ${resolved}`);
-    error.status = 400;
-    error.code = 'Invalid config path';
-    throw error;
-  }
-
-  return resolved;
-}
-
-function readTextFile(filePath) {
-  ensureExists(filePath, 'File not found');
-
-  if (isDirectory(filePath)) {
-    const error = new Error(`Expected a file but got a directory: ${filePath}`);
-    error.status = 400;
-    throw error;
-  }
-
-  return fs.readFileSync(filePath, 'utf8');
-}
-
-function readTextFileSafe(filePath) {
-  if (!filePath) {
-    throw new Error('No file path provided');
-  }
-
-  if (isDirectory(filePath)) {
-    throw new Error(`Expected a file but got a directory: ${filePath}`);
-  }
-
-  if (!isFile(filePath)) {
-    throw new Error(`File does not exist: ${filePath}`);
-  }
-
-  return fs.readFileSync(filePath, 'utf8');
-}
-
-function writeTextFile(filePath, content) {
-  const dir = path.dirname(filePath);
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(filePath, content, 'utf8');
-}
-
-function jsonOk(res, payload = {}) {
-  res.json({ success: true, ...payload });
-}
-
-function jsonError(res, status, error, message) {
-  res.status(status).json({
-    error,
-    message
-  });
-}
-
-function handleRoute(label, handler) {
-  return async (req, res) => {
-    try {
-      const payload = await handler(req, res);
-      if (res.headersSent) return;
-      jsonOk(res, payload || {});
-    } catch (error) {
-      console.error(`[${label}]`, error);
-      jsonError(
-        res,
-        error.status || 500,
-        `${label} error`,
-        error.message || `Failed to handle ${label}`
-      );
-    }
-  };
-}
-
-function escapeYamlDoubleQuoted(value) {
-  return String(value)
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"');
-}
-
-function stripYamlWrappingQuotes(value) {
-  const trimmed = String(value).trim();
-  if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
-  ) {
-    return trimmed.slice(1, -1);
-  }
-  return trimmed;
-}
-
-function getCheckpointIndex(name) {
-  const match = /^checkpoint_(\d+)$/i.exec(name);
-  return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
-}
-
-function tailLines(text, maxLines = 120) {
-  const lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
-  return lines.slice(-maxLines).join('\n').trimEnd();
-}
-
-function firstExistingFile(candidates, fallbackBase = __dirname) {
-  for (const candidate of candidates) {
-    const resolved = safeResolvePath(candidate, fallbackBase);
-    if (resolved && isFile(resolved)) {
-      return resolved;
-    }
-  }
-  return null;
-}
-
-/* =========================
-   SETTINGS
-========================= */
-
-function getDefaultSettings() {
-  return {
-    checkpoints_dir: DEFAULTS.checkpointsDir,
-    config_yaml_path: DEFAULTS.configYamlPath,
-    openevolve_logs_dir: DEFAULTS.logsDir,
-    dataset_json_path: DEFAULTS.datasetJsonPath,
-    program_name: 'Program Name',
-    program_subtext: 'Initial-program',
-    pathway_label: 'Pathway',
-    api_key_label: 'Key',
-    api_key_value: 'OPENAI_API_KEY'
-  };
-}
-
-function loadAppSettings() {
-  const defaults = getDefaultSettings();
-
-  try {
-    if (!fs.existsSync(SETTINGS_FILE)) {
-      writeTextFile(SETTINGS_FILE, JSON.stringify(defaults, null, 2));
-      return defaults;
-    }
-
-    const parsed = JSON.parse(readTextFile(SETTINGS_FILE));
-    return { ...defaults, ...parsed };
-  } catch (error) {
-    console.error('[settings] failed to load settings:', error.message);
-    return defaults;
-  }
-}
-
-function saveAppSettings(nextSettings) {
-  writeTextFile(SETTINGS_FILE, JSON.stringify(nextSettings, null, 2));
-}
-
-let appSettings = loadAppSettings();
-
-function getActiveCheckpointsDir() {
-  if (Object.prototype.hasOwnProperty.call(appSettings, 'checkpoints_dir')) {
-    return String(appSettings.checkpoints_dir || '').trim();
-  }
-  return String(DEFAULTS.checkpointsDir || '').trim();
-}
-
-function getActiveConfigYamlPath() {
-  if (Object.prototype.hasOwnProperty.call(appSettings, 'config_yaml_path')) {
-    return String(appSettings.config_yaml_path || '').trim();
-  }
-  return String(DEFAULTS.configYamlPath || '').trim();
-}
-
-function getActiveOpenEvolveLogsDir() {
-  if (Object.prototype.hasOwnProperty.call(appSettings, 'openevolve_logs_dir')) {
-    return String(appSettings.openevolve_logs_dir || '').trim();
-  }
-  return String(DEFAULTS.logsDir || '').trim();
-}
-
-function getActiveDatasetJsonPath() {
-  if (Object.prototype.hasOwnProperty.call(appSettings, 'dataset_json_path')) {
-    return String(appSettings.dataset_json_path || '').trim();
-  }
-  return String(DEFAULTS.datasetJsonPath || '').trim();
-}
-
-function validatePathOrAllowEmpty(value, fieldName, missingLabel) {
-  const trimmed = String(value || '').trim();
-
-  if (!trimmed) {
-    return '';
-  }
-
-  if (fieldName === 'config_yaml_path') {
-    return ensureYamlFilePath(trimmed);
-  }
-
-  if (fieldName === 'dataset_json_path') {
-    return trimmed;
-  }
-
-  const resolved = path.isAbsolute(trimmed)
-    ? path.normalize(trimmed)
-    : path.resolve(__dirname, trimmed);
-
-  if (!pathExists(resolved)) {
-    const error = new Error(`Path does not exist: ${resolved}`);
-    error.status = 400;
-    error.code = missingLabel;
-    throw error;
-  }
-
-  return resolved;
-}
-
-function applySettingIfPresent(nextSettings, body, key, validator) {
-  if (typeof body[key] === 'undefined') return;
-  nextSettings[key] = validator ? validator(body[key]) : String(body[key]).trim();
-}
-
-function applyTrimmedTextIfPresent(nextSettings, body, key) {
-  if (typeof body[key] !== 'string') return;
-  const trimmed = body[key].trim();
-  if (trimmed) nextSettings[key] = trimmed;
-}
-
-/* =========================
-   YAML HELPERS
-========================= */
-
-function readYamlConfig(configPath = getActiveConfigYamlPath()) {
-  const finalPath = ensureYamlFilePath(configPath);
-  const parsed = YAML.parse(readTextFileSafe(finalPath));
-
-  if (!parsed || typeof parsed !== 'object') {
-    throw new Error(`Invalid YAML config: ${finalPath}`);
-  }
-
-  return parsed;
-}
-
-function readYamlApiKey(configPath = getActiveConfigYamlPath()) {
-  const finalPath = ensureYamlFilePath(configPath);
-  const raw = readTextFileSafe(finalPath);
-  const match = raw.match(/^\s*api_key:\s*(.+?)\s*$/m);
-
-  if (!match) return '';
-
-  const value = stripYamlWrappingQuotes(match[1]);
-  return value.toLowerCase() === 'null' ? '' : value;
-}
-
-function writeYamlApiKey(configPath, nextApiKey) {
-  const finalPath = ensureYamlFilePath(configPath);
-  const raw = readTextFileSafe(finalPath);
-  const replacementLine = `api_key: "${escapeYamlDoubleQuoted(nextApiKey)}"`;
-
-  if (/^\s*api_key:\s*.+$/m.test(raw)) {
-    writeTextFile(
-      finalPath,
-      raw.replace(/^\s*api_key:\s*.+$/m, replacementLine)
-    );
-    return;
-  }
-
-  writeTextFile(finalPath, `${raw.trimEnd()}\n${replacementLine}\n`);
-}
-
-function getConfigSummary() {
-  const activeConfigPath = getActiveConfigYamlPath();
-  if (!activeConfigPath) {
-    const error = new Error('config_yaml_path is not set yet');
-    error.status = 400;
-    throw error;
-  }
-
-  const configPath = ensureYamlFilePath(activeConfigPath);
-  const cfg = readYamlConfig(configPath);
-
-  return {
-    config_yaml_path: configPath,
-    max_iterations: safeNumber(cfg.max_iterations),
-    checkpoint_interval: safeNumber(cfg.checkpoint_interval),
-    population_size: safeNumber(cfg?.database?.population_size),
-    num_islands: safeNumber(cfg?.database?.num_islands),
-    max_code_length: safeNumber(cfg.max_code_length),
-    diff_based_evolution:
-      typeof cfg.diff_based_evolution === 'boolean'
-        ? cfg.diff_based_evolution
-        : null
-  };
-}
-
-/* =========================
-   OPENEVOLVE CHECKPOINTS
-========================= */
-
-function listCheckpointFolders(checkpointsDir) {
-  ensureExists(checkpointsDir, 'Checkpoint directory not found');
-
-  return fs
-    .readdirSync(checkpointsDir, { withFileTypes: true })
-    .filter(entry => entry.isDirectory() && /^checkpoint_\d+$/i.test(entry.name))
-    .map(entry => entry.name)
-    .sort((a, b) => getCheckpointIndex(a) - getCheckpointIndex(b));
-}
-
-function parseEvolutionInfo(infoPath, checkpointName) {
-  const parsed = JSON.parse(readTextFile(infoPath));
-
-  const currentIteration =
-    safeNumber(parsed.current_iteration) ??
-    safeNumber(parsed.iteration) ??
-    safeNumber(parsed.generation);
-
-  if (currentIteration == null) return null;
-
-  return {
-    checkpoint: checkpointName,
-    id: parsed.id ?? '',
-    generation: safeNumber(parsed.generation),
-    iteration: safeNumber(parsed.iteration),
-    current_iteration: currentIteration,
-    timestamp: safeNumber(parsed.timestamp),
-    saved_at: safeNumber(parsed.saved_at),
-    language: parsed.language ?? null,
-    metrics: normalizeMetrics(parsed.metrics)
-  };
-}
-
-function readOpenEvolveEvolutionRows() {
-  const checkpointsDir = getActiveCheckpointsDir();
-
-  if (!checkpointsDir) {
-    const error = new Error('checkpoints_dir is not set yet');
-    error.status = 400;
-    throw error;
-  }
-
-  const checkpointFolders = listCheckpointFolders(checkpointsDir);
-  const evolutions = [];
-
-  for (const folder of checkpointFolders) {
-    const infoPath = path.join(checkpointsDir, folder, 'best_program_info.json');
-    if (!fs.existsSync(infoPath)) continue;
-
-    try {
-      const row = parseEvolutionInfo(infoPath, folder);
-      if (row) evolutions.push(row);
-    } catch (error) {
-      console.error(`[evolutions] failed reading ${infoPath}:`, error.message);
-    }
-  }
-
-  return evolutions;
-}
-
-/* =========================
-   OPENEVOLVE LOGS
-========================= */
-
-function listOpenEvolveLogFiles(logsDir) {
-  ensureExists(logsDir, 'Logs directory not found');
-
-  return fs
-    .readdirSync(logsDir, { withFileTypes: true })
-    .filter(entry => entry.isFile())
-    .map(entry => {
-      const fullPath = path.join(logsDir, entry.name);
-      const stat = fs.statSync(fullPath);
-      return {
-        name: entry.name,
-        fullPath,
-        mtimeMs: stat.mtimeMs,
-        size: stat.size
-      };
-    })
-    .sort((a, b) => b.mtimeMs - a.mtimeMs);
-}
-
-function readLatestOpenEvolveLog() {
-  const logsDir = getActiveOpenEvolveLogsDir();
-
-  if (!logsDir) {
-    const error = new Error('openevolve_logs_dir is not set yet');
-    error.status = 400;
-    throw error;
-  }
-
-  const files = listOpenEvolveLogFiles(logsDir);
-
-  if (!files.length) {
-    return {
-      logs_dir: logsDir,
-      file_name: '',
-      file_path: '',
-      updated_at: null,
-      text: '',
-      line_count: 0
-    };
-  }
-
-  const latest = files[0];
-  const raw = readTextFile(latest.fullPath);
-  const text = tailLines(raw, 120);
-
-  return {
-    logs_dir: logsDir,
-    file_name: latest.name,
-    file_path: latest.fullPath,
-    updated_at: new Date(latest.mtimeMs).toISOString(),
-    text,
-    line_count: text ? text.split('\n').length : 0
-  };
-}
-
-/* =========================
-   EVALUATION HELPERS
-========================= */
-
-const EVALUATION = {
-  benchmarkRoot: path.join(__dirname, 'assets', 'UCT-benchmarking'),
-  pythonBin: process.env.PYTHON_BIN || 'python'
-};
-
-function runEvaluationRender(uctpPath, referenceDatasetPath) {
-  return new Promise((resolve, reject) => {
-    ensureExists(EVALUATION.benchmarkRoot, 'Benchmark root not found');
-    ensureExists(referenceDatasetPath, 'Reference dataset not found');
-    ensureExists(uctpPath, 'UCT output file not found');
-
-    const pythonScript = `
-import os
-import sys
-import json
-import time
-import io
-import contextlib
-import pandas as pd
-import numpy as np
-
-benchmark_root = sys.argv[1]
-uctp_path = sys.argv[2]
-reference_dataset_path = sys.argv[3]
-
-os.chdir(benchmark_root)
-
-from libraries.apiIntegration import loadDataset
-from libraries.generateCov import generateCov
-from libraries.propagator import monteCarloPropagator, ephemerisPropagator, TLEpropagator
-from libraries.orbitAssociation import orbitAssociation
-from libraries.stateMetrics import stateMetrics
-from libraries.binaryMetrics import binaryMetrics
-from libraries.residualMetrics import residualMetrics
-from libraries.evaluationReport import evaluationReport
-
-def to_jsonable(obj):
-    if isinstance(obj, pd.DataFrame):
-        return obj.to_dict(orient='records')
-    if isinstance(obj, pd.Series):
-        return obj.to_dict()
-    if isinstance(obj, (pd.Timestamp, np.datetime64)):
-        try:
-            return pd.Timestamp(obj).isoformat()
-        except Exception:
-            return str(obj)
-    if isinstance(obj, dict):
-        return {str(k): to_jsonable(v) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple, set)):
-        return [to_jsonable(v) for v in obj]
-    if isinstance(obj, np.ndarray):
-        return [to_jsonable(v) for v in obj.tolist()]
-    if isinstance(obj, (np.integer,)):
-        return int(obj)
-    if isinstance(obj, (np.floating,)):
-        return float(obj)
-    if isinstance(obj, (np.bool_,)):
-        return bool(obj)
-    if obj is None or isinstance(obj, (str, int, float, bool)):
-        return obj
-    try:
-        return obj.item()
-    except Exception:
-        return str(obj)
-
-start = time.perf_counter()
-stdout_capture = io.StringIO()
-
-with contextlib.redirect_stdout(stdout_capture):
-    ref_obs, obs_data, ref_track, track_data, ref_sv, ref_elset = loadDataset(reference_dataset_path)
-
-    uctp_output = pd.read_json(uctp_path)
-    uctp_output['epoch'] = pd.to_datetime(uctp_output['epoch'])
-    uctp_output = generateCov(uctp_output)
-
-    associated_orbits, association_results, nonassociated_orbits = orbitAssociation(
-        ref_sv, uctp_output, ephemerisPropagator
-    )
-
-    binary_results = binaryMetrics(ref_obs, associated_orbits)
-    state_results = stateMetrics(ref_sv, associated_orbits, monteCarloPropagator)
-    residual_cand_results = residualMetrics(ref_obs, uctp_output, ephemerisPropagator, False)
-    residual_ref_results = residualMetrics(ref_obs, associated_orbits, ephemerisPropagator, True)
-
-    evals = evaluationReport(
-        association_results,
-        binary_results,
-        state_results,
-        residual_ref_results,
-        residual_cand_results,
-        './data/raw_results.json'
-    )
-
-elapsed_minutes = round((time.perf_counter() - start) / 60.0, 4)
-
-payload = {
-    'message': 'Evaluation completed successfully.',
-    'uctp_path': uctp_path,
-    'reference_dataset_path': reference_dataset_path,
-    'association_results': to_jsonable(association_results),
-    'associated_orbits': to_jsonable(associated_orbits),
-    'nonassociated_orbits': to_jsonable(nonassociated_orbits),
-    'binary_results': to_jsonable(binary_results),
-    'state_results': to_jsonable(state_results),
-    'residual_cand_results': to_jsonable(residual_cand_results),
-    'residual_ref_results': to_jsonable(residual_ref_results),
-    'evals': to_jsonable(evals),
-    'elapsed_minutes': elapsed_minutes,
-    'logs': stdout_capture.getvalue().strip()
-}
-
-print(json.dumps(payload, default=to_jsonable))
-`.trim();
-
-    const child = spawn(
-      EVALUATION.pythonBin,
-      ['-c', pythonScript, EVALUATION.benchmarkRoot, uctpPath, referenceDatasetPath],
-      { cwd: EVALUATION.benchmarkRoot }
-    );
-
-    let stdout = '';
-    let stderr = '';
-
-    child.stdout.on('data', chunk => {
-      stdout += chunk.toString();
-    });
-
-    child.stderr.on('data', chunk => {
-      stderr += chunk.toString();
-    });
-
-    child.on('error', error => {
-      reject(error);
-    });
-
-    child.on('close', code => {
-      if (code !== 0) {
-        return reject(
-          new Error(
-            `Evaluation Python process failed with code ${code}\n${stderr || stdout || 'No output returned.'}`
-          )
-        );
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+
+    <style>
+      .top-log-panel{
+        min-width: 0;
+        grid-column: span 2;
       }
 
-      try {
-        const parsed = JSON.parse(stdout.trim());
-        resolve(parsed);
-      } catch (error) {
-        reject(
-          new Error(
-            `Failed to parse evaluation output as JSON.\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}`
-          )
-        );
+      .top-log-panel .panel-body{
+        height: 85px;
+        min-height: 85px;
+        max-height: 85px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.45;
+        box-sizing: border-box;
+        padding: 0 14px 0 0;
+        margin: 0;
+        scrollbar-gutter: stable;
       }
-    });
-  });
-}
 
-/* =========================
-   SETTINGS API
-========================= */
-
-app.get('/api/settings', (req, res) => {
-  let yamlApiKey = '';
-
-  try {
-    const activeConfigPath = getActiveConfigYamlPath();
-    if (activeConfigPath) {
-      yamlApiKey = readYamlApiKey(activeConfigPath);
-    }
-  } catch (error) {
-    console.warn('[settings] failed to read YAML api_key:', error.message);
-  }
-
-  jsonOk(res, {
-    ...appSettings,
-    checkpoints_dir: getActiveCheckpointsDir(),
-    config_yaml_path: getActiveConfigYamlPath(),
-    openevolve_logs_dir: getActiveOpenEvolveLogsDir(),
-    dataset_json_path: getActiveDatasetJsonPath(),
-    api_key_value: yamlApiKey || appSettings.api_key_value || 'OPENAI_API_KEY'
-  });
-});
-
-app.post('/api/settings', async (req, res) => {
-  try {
-    const body = req.body || {};
-    const nextSettings = { ...appSettings };
-
-    applySettingIfPresent(nextSettings, body, 'checkpoints_dir', value =>
-      validatePathOrAllowEmpty(value, 'checkpoints_dir', 'Invalid checkpoint path')
-    );
-
-    applySettingIfPresent(nextSettings, body, 'config_yaml_path', value =>
-      validatePathOrAllowEmpty(value, 'config_yaml_path', 'Invalid config path')
-    );
-
-    applySettingIfPresent(nextSettings, body, 'openevolve_logs_dir', value =>
-      validatePathOrAllowEmpty(value, 'openevolve_logs_dir', 'Invalid logs path')
-    );
-
-    applySettingIfPresent(nextSettings, body, 'dataset_json_path', value =>
-      validatePathOrAllowEmpty(value, 'dataset_json_path', 'Invalid dataset path')
-    );
-
-    applyTrimmedTextIfPresent(nextSettings, body, 'program_name');
-    applyTrimmedTextIfPresent(nextSettings, body, 'program_subtext');
-    applyTrimmedTextIfPresent(nextSettings, body, 'pathway_label');
-    applyTrimmedTextIfPresent(nextSettings, body, 'api_key_label');
-
-    if (typeof body.api_key_value === 'string') {
-      nextSettings.api_key_value = body.api_key_value.trim();
-      const targetConfigPath = nextSettings.config_yaml_path || getActiveConfigYamlPath();
-      if (String(targetConfigPath || '').trim()) {
-        writeYamlApiKey(targetConfigPath, body.api_key_value.trim());
+      .top-log-panel .log-meta{
+        color: var(--muted);
+        font-size: 11px;
+        margin: 0 0 6px 0;
       }
-    }
 
-    appSettings = nextSettings;
-    saveAppSettings(appSettings);
-
-    let yamlApiKey = '';
-    try {
-      const activeConfigPath = getActiveConfigYamlPath();
-      if (activeConfigPath) {
-        yamlApiKey = readYamlApiKey(activeConfigPath);
+      .top-log-panel code{
+        display: block;
+        white-space: pre-wrap;
+        margin: 0;
+        padding: 0;
       }
-    } catch (_) {}
 
-    jsonOk(res, {
-      message: 'Settings updated successfully',
-      settings: {
-        ...appSettings,
-        dataset_json_path: getActiveDatasetJsonPath(),
-        api_key_value: yamlApiKey || appSettings.api_key_value || 'OPENAI_API_KEY'
+      .top-log-panel .panel-body::-webkit-scrollbar,
+      #systemLog::-webkit-scrollbar{
+        width: 10px;
       }
-    });
-  } catch (error) {
-    const status = error.status || 500;
-    const code = error.code || 'Settings update error';
-    console.error('[settings] failed to update settings:', error);
-    jsonError(res, status, code, error.message || 'Failed to update settings');
-  }
-});
 
-/* =========================
-   OPENEVOLVE APIs
-========================= */
+      .top-log-panel .panel-body::-webkit-scrollbar-track,
+      #systemLog::-webkit-scrollbar-track{
+        background: transparent;
+        margin: 6px 0;
+      }
 
-app.get('/api/openevolve/evolutions', handleRoute('openevolve evolutions', async () => {
-  const rows = readOpenEvolveEvolutionRows();
-  const metricNames = new Set();
+      .top-log-panel .panel-body::-webkit-scrollbar-thumb,
+      #systemLog::-webkit-scrollbar-thumb{
+        background: rgba(255,255,255,0.28);
+        border-radius: 999px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+      }
 
-  for (const row of rows) {
-    for (const key of Object.keys(row.metrics || {})) {
-      metricNames.add(key);
-    }
-  }
+      #systemLog{
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-gutter: stable;
+        padding-right: 14px;
+        box-sizing: border-box;
+      }
 
-  return {
-    checkpoints_dir: getActiveCheckpointsDir(),
-    count: rows.length,
-    metric_names: [...metricNames],
-    rows
-  };
-}));
+      #systemLog code{
+        display: block;
+        margin: 0;
+        padding: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="welcomeOverlay" class="welcome-overlay" aria-hidden="false">
+      <canvas id="welcomeCanvas3d" class="welcome-canvas" aria-hidden="true"></canvas>
+      <canvas id="welcomeCanvas2d" class="welcome-canvas overlay" aria-hidden="true"></canvas>
 
-app.get('/api/openevolve/config-summary', handleRoute('config-summary', async () => {
-  return getConfigSummary();
-}));
+      <div class="welcome-content">
+        <div class="welcome-pill"><span class="welcome-logo">SDA TAP LAB</span></div>
+        <h1 class="welcome-title">Uncorrelated Track Processing</h1>
+        <p class="welcome-subtitle">Analytic Console</p>
+        <button id="enterBtn" class="enter-btn" aria-label="Enter dashboard">Enter</button>
+      </div>
+    </div>
 
-app.get('/api/openevolve/latest-log', handleRoute('latest-log', async () => {
-  return readLatestOpenEvolveLog();
-}));
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="project-initials">SDA</span>
+        <span class="project-name">Analytics Console</span>
+      </div>
 
-/* =========================
-   EVALUATION ROUTE
-========================= */
+      <nav class="nav">
+        <a id="openWelcomeBtn" class="nav-item" href="#" title="Open welcome">
+          <span class="icon"></span><span>Welcome</span>
+        </a>
+        <a class="nav-item active" href="index.html"><span class="icon"></span><span>Dashboard</span></a>
+        <a class="nav-item" href="evaluation.html"><span class="icon"></span><span>Evaluation [BETA]</span></a>
+        <a class="nav-item" href="documentation.html"><span class="icon"></span><span>Documentation</span></a>
+        <a class="nav-item" href="settings.html"><span class="icon"></span><span>Settings</span></a>
+      </nav>
+    </aside>
 
-app.post('/api/evaluation/render', async (req, res) => {
-  try {
-    const body = req.body || {};
-    const resolvedUctpPath = resolveMaybeRelativePath(body.uctpPath);
-    const resolvedReferenceDatasetPath = resolveMaybeRelativePath(body.referenceDatasetPath);
+    <main class="hud">
+      <div class="hud-top">
+        <div class="panel-thin">
+          <div class="panel-header"><span>Telemetry</span><span class="dot"></span></div>
+          <div class="panel-body list">
+            <div><span>Avg Range</span><b id="tAvgRange">—</b></div>
+            <div><span>Avg LOS Unc</span><b id="tAvgLos">—</b></div>
+            <div><span>Latest Obs</span><b id="tLatest">—</b></div>
+          </div>
+        </div>
 
-    const payload = await runEvaluationRender(
-      resolvedUctpPath,
-      resolvedReferenceDatasetPath
-    );
+        <div class="panel-thin top-log-panel">
+          <div class="panel-header"><span>OpenEvolve Log</span></div>
+          <div class="panel-body" id="openEvolveLog">
+            <div class="log-meta">Waiting for latest log file...</div>
+            <code>—</code>
+          </div>
+        </div>
 
-    jsonOk(res, payload);
-  } catch (error) {
-    const status = error.status || 500;
-    const code = error.code || 'evaluation render error';
-    console.error('[evaluation/render]', error);
-    jsonError(res, status, code, error.message || 'Failed to render evaluation');
-  }
-});
+        <div class="panel-thin">
+          <div class="panel-header"><span>Queue</span><span class="dot"></span></div>
+          <div class="panel-body list">
+            <div><span>Uncorrelated</span><b id="qUncorrelated">—</b></div>
+            <div><span>Resolved</span><b id="qResolved">—</b></div>
+            <div><span>Flagged</span><b id="qFlagged">—</b></div>
+          </div>
+        </div>
+      </div>
 
-/* =========================
-   INFO ROUTES
-========================= */
+      <div class="hud-left">
+        <div class="panel-stack">
+          <div class="panel-thin">
+            <div class="panel-header"><span>Pass Window</span></div>
+            <div class="panel-body ticker" id="passWindow">—</div>
+          </div>
 
-app.get('/api/config', (req, res) => {
-  jsonOk(res, {
-    openEvolve: {
-      checkpointsDir: getActiveCheckpointsDir(),
-      configYamlPath: getActiveConfigYamlPath(),
-      logsDir: getActiveOpenEvolveLogsDir(),
-      datasetJsonPath: getActiveDatasetJsonPath()
-    }
-  });
-});
+          <div class="panel-thin">
+            <div class="panel-header"><span>Constellations</span></div>
+            <div class="panel-body list tight">
+              <div><span>Unique Sensors</span><b id="cSensors">—</b></div>
+              <div><span>Obs / hr</span><b id="cObsRate">—</b></div>
+              <div><span>Span</span><b id="cSpan">—</b></div>
+            </div>
+          </div>
 
-app.get('/api/health', (req, res) => {
-  jsonOk(res, {
-    status: 'ok',
-    service: 'Analytics Console Server'
-  });
-});
+          <div class="panel-thin">
+            <div class="panel-header"><span>Reliability Score</span></div>
+            <div class="panel-body list tight">
+              <div><span>Latest</span><b id="metricReliability">—</b></div>
+              <div><span>Status</span><b id="metricReliabilityStatus">—</b></div>
+            </div>
+          </div>
 
-/* =========================
-   EVALUATION REPORT ROUTE
-========================= */
+          <div class="panel-thin">
+            <div class="panel-header"><span>Latest Metrics</span></div>
+            <div class="panel-body list tight" id="latestMetricsPanel">
+              <div><span>Waiting for checkpoint...</span><b>—</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-app.post('/api/evaluation/raw-results', async (req, res) => {
-  try {
-    const body = req.body || {};
+      <div class="hud-right">
+        <div class="panel-stack">
+          <div class="panel-thin">
+            <div class="panel-header"><span>Alerts</span><span class="dot"></span></div>
+            <div class="panel-body list tight">
+              <div><span>LOS&gt;3</span><b id="aLosHigh">—</b></div>
+              <div><span>Sensor=nan</span><b id="aNanSensor">—</b></div>
+              <div><span>Range Jump</span><b id="aRangeJump">—</b></div>
+            </div>
+          </div>
 
-    let resolvedRawResultsPath = null;
+          <div class="panel-thin">
+            <div class="panel-header"><span>Throughput</span></div>
+            <div class="panel-body bars small" id="throughputBars">
+              <div style="--v:30%"></div>
+              <div style="--v:55%"></div>
+              <div style="--v:80%"></div>
+              <div style="--v:42%"></div>
+            </div>
+          </div>
 
-    if (body.rawResultsPath && String(body.rawResultsPath).trim()) {
-      resolvedRawResultsPath = resolveMaybeRelativePath(body.rawResultsPath);
-    } else {
-      resolvedRawResultsPath = firstExistingFile([
-        path.join(__dirname, 'data', 'raw_results.json'),
-        path.join(__dirname, 'assets', 'data', 'raw_results.json'),
-        path.join(__dirname, 'assets', 'UCT-benchmarking', 'data', 'raw_results.json'),
-        path.join(__dirname, 'assets', 'UNCORRELATED-TRACK-PROCESSING', 'data', 'raw_results.json')
-      ]);
-    }
+          <div class="panel-thin">
+            <div class="panel-header"><span>Ops</span></div>
+            <div class="panel-body list tight">
+              <div><span>Operators</span><b id="opsOperators">—</b></div>
+              <div><span>Jobs</span><b id="opsJobs">—</b></div>
+              <div><span>ETA</span><b id="opsEta">—</b></div>
+            </div>
+          </div>
 
-    if (!resolvedRawResultsPath) {
-      return jsonError(
-        res,
-        404,
-        'raw results load error',
-        'raw_results.json was not found in any expected location'
-      );
-    }
+          <div class="panel-thin">
+            <div class="panel-header"><span>Version</span></div>
+            <div class="panel-body ticker">v1.3 (build no.5)</div>
+          </div>
+        </div>
+      </div>
 
-    const rawText = readTextFile(resolvedRawResultsPath);
+      <div class="hud-bottom">
+        <div class="panel-thin">
+          <div class="panel-header"><span>System Log</span></div>
+          <div class="panel-body log" id="systemLog">
+            <code>[boot] waiting for dataset...</code>
+          </div>
+        </div>
 
-    const sanitizedText = rawText
-      .replace(/\bNaN\b/g, 'null')
-      .replace(/\bInfinity\b/g, 'null')
-      .replace(/\b-Infinity\b/g, 'null');
+        <div class="panel-thin">
+          <div class="panel-header"><span>Runs Successfully</span></div>
+          <div class="panel-body list">
+            <div><span>Latest</span><b id="metricRunsSuccessfully">—</b></div>
+            <div><span>Status</span><b id="metricRunsSuccessfullyStatus">—</b></div>
+            <div><span>Current Iteration</span><b id="metricCurrentIteration">—</b></div>
+          </div>
+        </div>
 
-    const parsed = JSON.parse(sanitizedText);
+        <div class="panel-thin">
+          <div class="panel-header"><span>Configuration</span></div>
+          <div class="panel-body list">
+            <div><span>Max Iterations</span><b id="qaMaxIterations">—</b></div>
+            <div><span>Checkpoint Interval</span><b id="qaCheckpointInterval">—</b></div>
+            <div><span>Population Size</span><b id="qaPopulationSize">—</b></div>
+            <div><span>Num Islands</span><b id="qaNumIslands">—</b></div>
+          </div>
+        </div>
+      </div>
 
-    jsonOk(res, {
-      message: 'Raw evaluation results loaded successfully.',
-      raw_results_path: resolvedRawResultsPath,
-      ...parsed
-    });
-  } catch (error) {
-    const status = error.status || 500;
-    const code = error.code || 'raw results load error';
-    console.error('[evaluation/raw-results]', error);
-    jsonError(res, status, code, error.message || 'Failed to load raw results');
-  }
-});
+      <section class="hud-center">
+        <header class="center-header">
+          <div class="tabs">
+            <button class="tab" data-view="dynamic">Dynamic</button>
+            <button class="tab active" data-view="static">Static</button>
+            <button class="tab" data-view="focus">Focus</button>
+          </div>
+        </header>
 
-/* =========================
-   STARTUP
-========================= */
+        <div id="dynamicDropzone" class="dynamic-dropzone" aria-label="Dynamic drop area">
+          <div class="dropzone-hint">Drag panels here in <b>Dynamic</b> mode</div>
+        </div>
 
-app.listen(APP.port, () => {
-  console.log(`Analytics Console Server running on http://localhost:${APP.port}`);
-  console.log(`GET  /api/settings`);
-  console.log(`POST /api/settings`);
-  console.log(`GET  /api/openevolve/evolutions`);
-  console.log(`GET  /api/openevolve/config-summary`);
-  console.log(`GET  /api/openevolve/latest-log`);
-  console.log(`POST /api/evaluation/render`);
-  console.log(`GET  /api/config`);
-  console.log(`GET  /api/health`);
-  console.log(`POST /api/evaluation/raw-results`);
-  console.log(`Settings file: ${SETTINGS_FILE}`);
-  console.log(`OpenEvolve checkpoints: ${getActiveCheckpointsDir() || '[not set yet]'}`);
-  console.log(`OpenEvolve config YAML: ${getActiveConfigYamlPath() || '[not set yet]'}`);
-  console.log(`OpenEvolve logs dir: ${getActiveOpenEvolveLogsDir() || '[not set yet]'}`);
-  console.log(`Dashboard dataset JSON: ${getActiveDatasetJsonPath() || '[not set yet]'}`);
-});
+        <section class="card card-lg no-border">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="metric-label">Performance</span>
+              <h2 id="mainMetricTitle">Combined Score</h2>
+            </div>
+
+            <div class="zoom-controls" style="display:flex; gap:8px;">
+              <button id="zoomOutBtn" class="settings-btn" type="button" aria-label="Zoom out">−</button>
+              <button id="resetZoomBtn" class="settings-btn" type="button" aria-label="Reset zoom">⟲</button>
+              <button id="zoomInBtn" class="settings-btn" type="button" aria-label="Zoom in">+</button>
+            </div>
+          </div>
+
+          <div class="card-body tall">
+            <canvas id="chartPerformance" height="160"></canvas>
+          </div>
+        </section>
+
+        <section id="metricCardsGrid" class="grid-3"></section>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script src="assets/js/welcome.js"></script>
+    <script src="assets/js/script.js"></script>
+  </body>
+</html>
