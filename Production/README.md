@@ -6,4 +6,4 @@
 **Step 5:** after it builds the app, go into that dist folder<br> 
 **Step 6:** double click OpenEvolve Analytics Console Setup 1.0.0 (installs the application)<br> 
 
-****make sure you extracted the assets folder as well, thats what stores the scripts and styling of the application****
+****Make sure you extracted the assets folder as well, thats what stores the scripts and styling of the application****
