@@ -456,9 +456,6 @@
         <a class="nav-item" href="index.html">
           <span class="icon"></span><span>Dashboard</span>
         </a>
-        <a class="nav-item" href="mllm.html">
-          <span class="icon"></span><span>mLLM</span>
-        </a>
         <a class="nav-item" href="evaluation.html">
           <span class="icon"></span><span>Evaluation [BETA]</span>
         </a>
@@ -481,7 +478,6 @@
           <a class="docs-nav-link" href="#openevolve">OpenEvolve Sources</a>
           <a class="docs-nav-link" href="#configuration">Configuration</a>
           <a class="docs-nav-link" href="#logs">Logs</a>
-          <a class="docs-nav-link" href="#mllm">mLLM</a>
           <a class="docs-nav-link" href="#navigation">Page Navigation</a>
           <a class="docs-nav-link" href="#best-practices">Best Practices</a>
           <a class="docs-nav-link" href="#developer-notes">Developer's Notes</a>
@@ -527,12 +523,6 @@
               The Analytics Console lets you view OpenEvolve checkpoints, latest metrics,
               log activity, and configuration values in one dashboard.
               It is designed to keep operational data visible while OpenEvolve is running simultaneously.
-            </p>
-
-            <p>
-              The interface supports multiple pages that share the same left-hand
-              navigation and styling so movement between dashboard, documentation,
-              mLLM, and settings stays consistent.
             </p>
 
             <ul>
@@ -720,22 +710,6 @@
               behavior.
             </p>
 
-            <h3 id="mllm">mLLM</h3>
-            <p>
-              The mLLM page provides access to the console’s chatbot-style interface.
-              From this page, users can interact with the model, code generate OpenEvolve intial programs and evaluator scripts, review workflow, and ask what metrics can be used in problems. This model is a mini language model that is trained on OpenEvolve example problems, code, and generalized data. Most importantly this model can be fine-tuned over time to better support uncorrelated track processing algorithms as newer algorithms are developed in OpenEvolve's AI architecture.<br><br>
-              This model is based off of Andej Karpathy's nanochat, which is an experimental harness for training LLMs. This local model can be trained for only 2 hours using 8XH100 GPU nodes for 48-100 dollars to reach gpt 2.0 benchmarks.<br><br>
-
-              Citations:
-              @misc{nanochat,<br><br>
-                author = {Andrej Karpathy},<br><br>
-                title = {nanochat: The best ChatGPT that \$100 can buy},<br><br>
-                year = {2025},<br><br>
-                publisher = {GitHub},<br><br>
-                url = {https://github.com/karpathy/nanochat}<br><br>
-              }
-            </p>
-
             <h3 id="navigation">Page Navigation</h3>
             <p>
               Every page uses the same left sidebar. From here you can move between:
@@ -744,7 +718,6 @@
             <ul>
               <li>Welcome: Front page before entering the Analytics Console</li>
               <li>Dashboard: Main analytics page which showcases OpenEvolve real-time evolutions, OpenEvolve configuration set ups,  OpenEvolve most recent logs, and data pulling metrics.</li>
-              <li>mLLM: Model that can help the user better understand the Analytic Console workflows or help generate OpenEvolve required codes such as initial programs and evaluator files based off different algorithms.</li>
               <li>Documentation: This page provides detailed information about using the OpenEvolve Analytics Console.</li>
               <li>Settings: Page for configuring the OpenEvolve Analytics Console settings on how the data is being pulled from different environments and directories.</li>
             </ul>
@@ -781,10 +754,8 @@
 - Past build(v1.0: build no.1): GUI design fixes and flow redesign for better user experience.
 - Past build(v1.1: build no.2): Prototype with working data pulls for checkpoints.
 - Past build(v1.2.0: build no.3): Fixed bugs related to data pull for external panels.
-- Current build(v1.2.1: build no.4): Initial release of the Analytics Console with dashboard, documentation, mLLM, and settings pages.
 - Current build(v1.3: build no.5): Demo release, Dynamic features disregarded, replaced with graphic features.
 - Future developments: Add feature where you can pull from multiple directories at once and compare them side by side in the dashboard.
-- Future developments: Finish training the mLLM model and integrate it into the mLLM page.
 - Future developments: Add a feature to where users can export best program and evaluator files.
 - Dynamic feature has been dropped to reduce complexity, maybe will add as a feature in the future when users are able to compare different runs side by side and want to pull different checkpoints from each run.
             </code>
@@ -802,7 +773,6 @@
           <a href="#openevolve">OpenEvolve Sources</a>
           <a href="#configuration">Configuration</a>
           <a href="#logs">Logs</a>
-          <a href="#mllm">mLLM</a>
           <a href="#navigation">Page Navigation</a>
           <a href="#best-practices">Best Practices</a>
           <a href="#developer-notes">Developer's Notes</a>
@@ -812,7 +782,6 @@
           <h4>Quick links</h4>
           <a href="index.html">Open Dashboard</a>
           <a href="settings.html">Open Settings</a>
-          <a href="mllm.html">Open mLLM</a>
         </div>
       </aside>
     </main>
