@@ -1439,9 +1439,7 @@
       avgLos,
       latestObs,
       uniqueSensors: sensors.size,
-      obsRate: Number.isFinite(spanMinutes) && spanMinutes > 0
-        ? (validObs.length / spanMinutes) * 60
-        : NaN,
+      TBD,
       spanMinutes,
       losGt3,
       nanSensorCount,
@@ -1451,6 +1449,7 @@
   }
 
   function renderOuterPanels(metrics) {
+    // DATASET OBSERVATION PANEL
     setText('tAvgRange', Number.isFinite(metrics.avgRange) ? fmtNum(metrics.avgRange, 2) : '—');
     setText('tAvgLos', Number.isFinite(metrics.avgLos) ? fmtNum(metrics.avgLos, 3) : '—');
     setText('tLatest', metrics.latestObs || '—');
@@ -1461,14 +1460,12 @@
 
     setText('passWindow', Number.isFinite(metrics.spanMinutes) ? `${fmtInt(metrics.spanMinutes)} min span` : '—');
     setText('cSensors', fmtInt(metrics.uniqueSensors));
-    setText('cObsRate', Number.isFinite(metrics.obsRate) ? fmtNum(metrics.obsRate, 1) : '—');
-    setText('cSpan', Number.isFinite(metrics.spanMinutes) ? `${fmtInt(metrics.spanMinutes)} min` : '—');
 
     setText('aLosHigh', fmtInt(metrics.losGt3));
     setText('aNanSensor', fmtInt(metrics.nanSensorCount));
     setText('aRangeJump', fmtInt(metrics.rangeJump));
 
-    setText('opsOperators', '4 online');
+    setText('opsOperators', 'TBD');
     setText('opsJobs', fmtInt(metrics.totalObs));
     setText('opsEta', Number.isFinite(metrics.p90) ? `${fmtInt(metrics.p90)}m` : '—');
 
