@@ -10,3 +10,11 @@ observations are grouped arbitrarily rather than through any physical tracking o
 This program is best understood as a baseline or test generator for producing placeholder
 association outputs, rather than as a true UCTP algorithm to test how an initial program can evolve
 from the metrics the user defines in OpenEvolve.
+
+# Evaluator
+The program is evaluated by comparing its randomly generated observation groupings against the
+ground-truth reference groupings in the dataset. The evaluation file computes an F1 score between
+each reference track and the best matching output track based on shared observation IDs in
+sourcedData, and the final score is the average of these best-match F1 values. As a result, the
+program is judged on how closely its random track assignments resemble the true grouping of
+observations, rather than on physical orbit quality or state estimation accuracy.
