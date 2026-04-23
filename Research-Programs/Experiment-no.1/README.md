@@ -18,3 +18,15 @@ each reference track and the best matching output track based on shared observat
 sourcedData, and the final score is the average of these best-match F1 values. As a result, the
 program is judged on how closely its random track assignments resemble the true grouping of
 observations, rather than on physical orbit quality or state estimation accuracy.
+
+# Configuration
+This configuration was run with 30 iterations and 1 island because we were starting to exhaust our free trial access. When evolving this program through free trial access, we tend to get to errors when calling the api which is why we only ran it with 30 iterations and 1 island.
+
+# Conclusion
+This experiment was designed to demonstrate how effectively OpenEvolve can improve a simple
+initial program related to UCTP toward the desired evaluation metrics. Where the
+initial program scored 0 out of 100 prior to any evolution. This result was expected, as the program
+did not contain meaningful association logic and instead grouped observations randomly, making
+it unable to track objects effectively. Based on the evaluation metrics defined by the researchers,
+the objective of this experiment was to guide OpenEvolve toward developing logic that is more
+closely aligned with the scoring criteria and improved overall track association performance.
