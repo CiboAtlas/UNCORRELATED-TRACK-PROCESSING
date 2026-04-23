@@ -1,5 +1,5 @@
 # Development
-This is a development environment that developers can use to make changes into the Analytic Console in the future. This version of the Analytic Console includes different pages that did not make it to production.
+This is a development environment that developers can use to make changes into the Analytic Console in the future. This version of the Analytic Console includes different pages that did not make it to production that students were trying to development before the semester ended. But were ultimately so that researchers can have a more refined version of the Analytic Console that focused on analyzing OpenEvolve runs without all the extra features.
 Additional pages in development:
 <br>**- mllm**<br> 
 **- 3DViewer**<br> 
