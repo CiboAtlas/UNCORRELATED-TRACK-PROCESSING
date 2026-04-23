@@ -1,0 +1,268 @@
+﻿# ===============================
+# OpenEvolve Full Configuration
+# (Hybrid: Ollama + OpenRouter)
+# ===============================
+
+# -------- Experiment configuration --------
+experiment:
+  name: uctp-track-association
+  root_dir: uctp-openevolve-example
+
+# -------- Output paths --------
+paths:
+  output_dir: uctp-openevolve-example/openevolve_output
+  best_dir: uctp-openevolve-example/openevolve_output/best
+  checkpoint_dir: uctp-openevolve-example/openevolve_output/checkpoints
+  logs_dir: uctp-openevolve-example/openevolve_output/logs
+
+# -------- Program under evolution --------
+program:
+  entry_file: uctp-openevolve-example/initial_program.py
+  language: python
+  function_name: run_association
+
+# -------- Evaluation binding --------
+evaluation:
+  evaluator_file: uctp-openevolve-example/evaluator.py
+  entry_function: evaluate
+
+# -------- General settings --------
+max_iterations: 100
+checkpoint_interval: 5
+log_level: INFO
+log_dir: null
+random_seed: null
+language: python
+file_suffix: ".py"
+
+# -------- LLM configuration --------
+llm:
+  api_base: "https://generativelanguage.googleapis.com/v1beta/openai"
+
+  api_key: "${OPENAI_API_KEY}"
+
+  models:
+    - name: "models/gemini-2.5-flash"
+      weight: 1.0
+      temperature: 0.5
+      max_tokens: 20000
+
+    # - name: "gemini-2.5-pro"
+    #   weight: 0.2
+    #   temperature: 0.8
+    #   max_tokens: 200000
+
+  # default_headers:
+  #   Authorization: "Bearer ${OPENAI_API_KEY}"
+
+  evaluator_models:
+    - name: "models/gemini-2.5-flash"
+      weight: 1.0
+      temperature: 0.3
+      max_tokens: 30000
+
+  # -------- LLM configuration --------
+  # llm:
+  #   api_base: "http://localhost:11434/v1"
+
+  #   models:
+  #     - name: "deepseek-coder:6.7b-instruct-q4_K_M"
+  #       weight: 0.5
+  #       temperature: 0.2
+  #       max_tokens: 3000
+
+  #     - name: "gemma4:e4b"
+  #       weight: 0.5
+  #       temperature: 0.3
+  #       max_tokens: 3000
+
+  #   default_headers:
+  #     Authorization: "Bearer ollama"
+
+  #   evaluator_models:
+  #     - name: "deepseek-coder:6.7b-instruct-q4_K_M"
+  #       weight: 1.0
+  #       temperature: 0.0
+  #       max_tokens: 3000
+
+  # Backward compatibility (unused but explicit)
+  primary_model: ""
+  primary_model_weight: 0.0
+  secondary_model: ""
+  secondary_model_weight: 0.0
+
+# -------- Prompt configuration --------
+prompt:
+  template_dir: null
+
+  system_message: |
+    ROLE:
+    You are optimizing a probabilistic track association algorithm for Space Domain Awareness.
+
+    CORE OBJECTIVE:
+    Maximize combined_score by improving recall (TP) while maintaining reasonable precision.
+
+    CRITICAL CONSTRAINTS:
+    - Only modify code between EVOLVE-START and EVOLVE-END
+    - Do NOT rewrite the full file
+    - Do NOT change libraries (keep numpy, orekit, etc as-is)
+    - Do NOT refactor architecture
+
+    ALLOWED MODIFICATIONS:
+    - Gating logic (e.g., GATE_THRESHOLD or dynamic gating)
+    - Scoring / likelihood function
+    - MCMC proposal logic (merge, split, reassign behavior)
+    - Small mathematical improvements
+    - You MAY introduce additive reward or penalty terms inside the evolve block
+    - You MAY make meaningful coefficient changes when needed, not just tiny tuning
+    - Prefer changes that reduce track fragmentation and improve association completeness
+    - You MAY modify the final scoring/return function to include penalties for excessive number of tracks or rewards for longer tracks
+
+    OPTIMIZATION GOAL:
+    - Increase TP (true positives)
+    - Reduce FN (missed matches)
+    - Avoid large increases in FP
+    - Favor recall improvements even if precision decreases slightly
+    - Prefer longer, more complete tracks over overly fragmented conservative tracks
+    - Reduce excessive track fragmentation (num_tracks is currently too high)
+    - Prefer solutions with fewer, longer tracks when they remain consistent with the data
+    - Penalize unnecessary track splits; merging is preferred when physically plausible
+
+    OUTPUT FORMAT (STRICT):
+    - Output ONLY SEARCH/REPLACE diff blocks
+    - Do NOT output unified diff format
+    - Do NOT output lines like --- a/file.py or +++ b/file.py
+    - Do NOT include explanations
+    - Do NOT include markdown
+
+    Each change MUST use EXACTLY this format:
+
+    <<<<<<< SEARCH
+    exact code to find
+    =======
+    replacement code
+    >>>>>>> REPLACE
+
+    RULES:
+    - The SEARCH block must exactly match existing code
+    - You may output multiple SEARCH/REPLACE blocks
+    - Output must contain at least one valid block
+    - Output must start with <<<<<<< SEARCH
+    - Output must end with >>>>>>> REPLACE
+
+  evaluator_system_message: |
+    Evaluate the algorithm strictly based on tracking performance.
+
+    Focus on:
+    - maximizing TP
+    - minimizing FP and FN, as close to zero as possible 
+    - improving recall without excessive false positives
+
+    Ignore formatting or style. Only evaluate correctness and performance.
+
+num_top_programs: 4 #pick from the top 4 programs for selection/mutation inside an island
+num_diverse_programs: 2
+
+use_template_stochasticity: true
+template_variations: {}
+
+use_meta_prompting: false
+meta_prompt_weight: 0.1
+
+include_artifacts: true
+max_artifact_bytes: 20480
+artifact_security_filter: true
+
+suggest_simplification_after_chars: 500
+include_changes_under_chars: 100
+concise_implementation_max_lines: 10
+comprehensive_implementation_min_lines: 50
+
+code_length_threshold: null
+
+# -------- Database / MAP-Elites configuration --------
+database:
+  db_path: null
+  in_memory: true
+
+  log_prompts: true
+
+  population_size: 100
+  archive_size: 50
+  num_islands: 3
+
+  elite_selection_ratio: 0.1
+  exploration_ratio: 0.2
+  exploitation_ratio: 0.7
+  diversity_metric: edit_distance
+
+  #explore conservative and aggressive trackers
+  feature_dimensions:
+    - precision # high percision (consverative)
+    - recall # high recall (aggressive)
+    - num_tracks # structure
+
+  feature_bins: 5
+  diversity_reference_size: 20
+
+  migration_interval: 25
+  migration_rate: 0.1
+
+  random_seed: null
+
+  artifacts_base_path: null
+  artifact_size_threshold: 32768
+  cleanup_old_artifacts: true
+  artifact_retention_days: 30
+
+  novelty_llm: null
+
+  # NOTE: embeddings are not used with Ollama here
+  embedding_model: null #text-embedding-3-small
+  similarity_threshold: 0.99
+
+# -------- Evaluator configuration --------
+evaluator:
+  timeout: 900
+  max_retries: 3
+
+  memory_limit_mb: null
+  cpu_limit: null
+
+  cascade_evaluation: false
+  cascade_thresholds:
+    - 0.5
+    - 0.75
+    - 0.9
+
+  parallel_evaluations: 1
+  distributed: false
+
+  use_llm_feedback: false
+  llm_feedback_weight: 0.1
+
+  enable_artifacts: true
+  max_artifact_storage: 104857600
+
+# -------- Evolution trace / logging --------
+evolution_trace:
+  enabled: true
+  format: jsonl
+  include_code: false
+  include_prompts: true
+  output_path: uctp-openevolve-example/openevolve_output/trace
+  buffer_size: 10
+  compress: false
+
+# -------- Evolution mechanics --------
+diff_based_evolution: true
+max_code_length: 30000
+diff_pattern: "<<<<<<< SEARCH\n(.*?)=======\n(.*?)>>>>>>> REPLACE"
+
+# -------- Early stopping --------
+# early_stopping_patience: 5
+# convergence_threshold: 0.001
+# early_stopping_metric: combined_score
+
+# -------- Parallel controller --------
+max_tasks_per_child: null
