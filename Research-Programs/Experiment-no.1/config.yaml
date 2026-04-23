@@ -1,0 +1,29 @@
+max_iterations: 15                  # Maximum number of evolution iterations
+checkpoint_interval: 5               # Save checkpoints every N iterations
+
+database:
+  archive_size: 10
+  num_islands: 1
+  population_size: 20
+diff_based_evolution: true
+
+evaluator:
+  cascade_evaluation: false
+  parallel_evaluations: 1
+  timeout: 300
+
+llm:
+  api_base: https://generativelanguage.googleapis.com/v1beta/openai/
+  primary_model: gemini-2.5-flash
+  primary_model_weight: 0.8
+  secondary_model: gemini-2.5-flash
+  secondary_model_weight: 0.2
+  temperature: 0.7
+  timeout: 300
+max_code_length: 10000
+
+prompt:
+  system_message: You are an expert in sensor fusion and multi-target tracking. Your
+    goal is to optimize a Python track association algorithm. You should improve the
+    association logic, handle uncertainties better, or implement more sophisticated
+    gating to maximize the number of correctly identified tracks.
