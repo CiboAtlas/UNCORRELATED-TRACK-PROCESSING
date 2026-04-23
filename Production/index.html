@@ -117,11 +117,11 @@
     <main class="hud">
       <div class="hud-top">
         <div class="panel-thin">
-          <div class="panel-header"><span>Telemetry</span><span class="dot"></span></div>
+          <div class="panel-header"><span>Dataset Observations</span><span class="dot"></span></div>
           <div class="panel-body list">
             <div><span>Avg Range</span><b id="tAvgRange">—</b></div>
-            <div><span>Avg LOS Unc</span><b id="tAvgLos">—</b></div>
-            <div><span>Latest Obs</span><b id="tLatest">—</b></div>
+            <div><span>Avg Elevation</span><b id="tAvgLos">—</b></div>
+            <div><span>Avg Azimuth</span><b id="tLatest">—</b></div>
           </div>
         </div>
 
@@ -134,7 +134,7 @@
         </div>
 
         <div class="panel-thin">
-          <div class="panel-header"><span>Queue</span><span class="dot"></span></div>
+          <div class="panel-header"><span>Uncorrelation</span><span class="dot"></span></div>
           <div class="panel-body list">
             <div><span>Uncorrelated</span><b id="qUncorrelated">—</b></div>
             <div><span>Resolved</span><b id="qResolved">—</b></div>
@@ -151,11 +151,11 @@
           </div>
 
           <div class="panel-thin">
-            <div class="panel-header"><span>Constellations</span></div>
+            <div class="panel-header"><span>Dataset Unique Sensors</span></div>
             <div class="panel-body list tight">
-              <div><span>Unique Sensors</span><b id="cSensors">—</b></div>
-              <div><span>Obs / hr</span><b id="cObsRate">—</b></div>
-              <div><span>Span</span><b id="cSpan">—</b></div>
+              <div><span>Unique idSensors</span><b id="cTBD">—</b></div>
+              <div><span>TBD</span><b id="cTBD">—</b></div>
+              <div><span>TBD</span><b id="cTBD">—</b></div>
             </div>
           </div>
 
@@ -183,7 +183,7 @@
             <div class="panel-body list tight">
               <div><span>LOS&gt;3</span><b id="aLosHigh">—</b></div>
               <div><span>Sensor=nan</span><b id="aNanSensor">—</b></div>
-              <div><span>Range Jump</span><b id="aRangeJump">—</b></div>
+              <div><span>Range</span><b id="aTBD">—</b></div>
             </div>
           </div>
 
@@ -192,17 +192,8 @@
             <div class="panel-body bars small" id="throughputBars">
               <div style="--v:30%"></div>
               <div style="--v:55%"></div>
-              <div style="--v:80%"></div>
+              <div style="--v:88%"></div>
               <div style="--v:42%"></div>
-            </div>
-          </div>
-
-          <div class="panel-thin">
-            <div class="panel-header"><span>Ops</span></div>
-            <div class="panel-body list tight">
-              <div><span>Operators</span><b id="opsOperators">—</b></div>
-              <div><span>Jobs</span><b id="opsJobs">—</b></div>
-              <div><span>ETA</span><b id="opsEta">—</b></div>
             </div>
           </div>
 
