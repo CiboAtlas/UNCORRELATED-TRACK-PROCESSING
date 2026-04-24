@@ -47,3 +47,13 @@ improving physical tracking accuracy.
 
 # Config
 Both programs are run with 100 max iterations and 3 islands
+
+# Conclusion
+This final experiment builds upon all previously developed initial programs and aims to analyze
+the trade-offs between using simpler initial programs versus more complex initial programs within
+OpenEvolve. Specifically, it evaluates the performance differences observed when evolving
+higher-fidelity programs and examines how increased complexity impacts optimization outcomes.
+Additionally, this experiment seeks to clarify what it means for a program to perform “better,”
+particularly in cases where improvements in one evaluation metric may come at the expense of
+others. This experiment is set up where researchers developed two initial programs at a higher level
+of fidelity correlating to UCTP logic. 
