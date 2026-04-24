@@ -14,3 +14,6 @@ refinement could be achieved through its evolutionary process.
 
 # Evaluator
 This evaluator file is the scoring script for OpenEvolve: it loads your candidate Python program, checks that it has a required run_association(dataset_path) function, runs it on the hardcoded dataset, validates that the program returns a proper list of predicted tracks with sourcedData observation IDs, and then compares those predicted groupings against the reference truth data. Its main goal is to see how well your program groups observations that belong to the same space object. It calculates pairwise precision, recall, F1, and accuracy, then adds extra scoring for internal track consistency using RA, declination, range, and time spread, optionally scores position/velocity state vectors if your program provides them, and penalizes duplicate or invalid observation IDs. The final combined_score is weighted as 50% binary grouping accuracy, 25% residual consistency, 15% state vector accuracy, and 10% assignment validity, so OpenEvolve can use that score to decide whether a newly evolved program is better or worse.
+
+# Config
+This program was run within 30 iterations and 3 islands to go against the first experiment and experimenting what would happen if we added more diversity.
