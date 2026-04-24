@@ -1,0 +1,78 @@
+max_iterations: 30
+checkpoint_interval: 5
+
+
+llm:
+  models:
+    - name: "gemini-2.5-flash"
+      weight: 1.0
+
+  evaluator_models:
+    - name: "gemini-2.5-flash"
+      weight: 1.0
+
+  api_base: "https://generativelanguage.googleapis.com/v1beta/openai/"
+  api_key: ==INSERT_YOUR_API_KEY_HERE==
+
+  temperature: 0.7
+  top_p: 0.95
+  max_tokens: 16000
+
+  timeout: 60
+  retries: 3
+  retry_delay: 5
+
+prompt:
+  system_message: |
+    You are an expert Python programmer specializing in observation association algorithms.
+    Improve the logic inside the evolve block to maximize the evaluator's combined_score.
+    The evaluator rewards:
+       - overlap_score: how well predicted grouped observation IDs overlap with reference groups
+       - coverage_score: how many reference groups receive a match
+       - count_score: how close the number of predicted tracks is to the reference count
+    You may improve:
+      - the scoring formula between observations
+      - the thresholding logic
+      - the grouping strategy
+       - how observations are assigned to tracks
+
+     Keep the required interface unchanged:
+       - keep run_association(dataset_path)
+        - keep the returned format as a list of dicts with "sourcedData"
+
+       Return only valid Python code.
+    Here is an exmaple of one of the observations:
+    ```  {
+      "id": "84cede68-c63e-4396-8ca0-f524a21fde91",
+      "obTime": "2025-10-19 19:34:19.311046+00:00",
+      "idSensor": "EXO5102",
+      "azimuth": 40.84304795716577,
+      "elevation": 54.83760540096291,
+      "range": 36796.994647297,
+      "ra": 117.8644967469,
+      "declination": 4.0356345692,
+      "losUnc": 4.833124,
+      "senlat": -23.767158,
+      "senlon": 133.915325,
+      "senalt": 0.531,
+      "uct": true
+    },
+
+  
+# Database configuration
+database:
+  population_size: 50
+  archive_size: 20
+  num_islands: 3
+  elite_selection_ratio: 0.2
+  exploitation_ratio: 0.7
+
+# Evaluator configuration
+evaluator:
+  timeout: 60
+  cascade_thresholds: [1.3]
+  parallel_evaluations: 3
+
+# Evolution settings
+diff_based_evolution: true
+max_code_length: 20000
