@@ -11,7 +11,7 @@ The side panels contains supporting information like configuration set up, lates
 **OpenEvolve Sources**
 OpenEvolve data is typically pulled from three places: checkpoint folders, the YAML configuration file, and the logs directory. These sources can be updated from the settings page so the console can point to a different environments of wherever OpenEvolve is being run.
 
-# DASHBOARD PAGE
+# SETTINGS PAGE
 Helps users set or update:
 Checkpoint folder path
 Config YAML path
