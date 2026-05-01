@@ -1,5 +1,5 @@
 # ANALYTIC CONSOLE DOCUMENTATION
-**OVERVIEW**
+# OVERVIEW
 The Analytic Console is an application that allows researchers to see how their algorithms and programs evolve in real time through OpenEvolve. The application combines a static frontend with a Node/Express backend. The frontend displays checkpoint metrics, OpenEvolve logs, configuration values, dataset observations, and evaluation results. The backend acts as the bridge between the browser and local OpenEvolve files, including checkpoint folders, YAML configuration files, log folders, datasets, and evaluation result JSON files.
 
 In the production based application, it consists of four main pages: 
