@@ -1,6 +1,14 @@
-# DASHBOARD PAGE
-**Dashboard Panels**
-The main dashboard is divided into two regions; outside and inside panels. This layout keeps the most important chart area large while secondary operational details stay visible around it.
+# ANALYTIC CONSOLE DOCUMENTATION
+**OVERVIEW**
+The Analytic Console is an application that allows researchers to see how their algorithms and programs evolve in real time through OpenEvolve. The application combines a static frontend with a Node/Express backend. The frontend displays checkpoint metrics, OpenEvolve logs, configuration values, dataset observations, and evaluation results. The backend acts as the bridge between the browser and local OpenEvolve files, including checkpoint folders, YAML configuration files, log folders, datasets, and evaluation result JSON files.
+
+In the production based application, it consists of four main pages: 
+index.html
+evaluation.html
+documentation.html
+settings.html
+
+All pages are navigated by a sidebar navigation which allows users to switch between the four different pages. 
 
 **Primary center panels**
 The center panels contains the main performance chart and any secondary metric cards that are generated from the evaluation file created by the user, The data being passed through in this region is from the latest checkpoint directory that OpenEvolve creates.
