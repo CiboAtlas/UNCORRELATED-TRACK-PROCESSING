@@ -45,7 +45,7 @@ emphasizes grouping accuracy and includes heuristic adjustments to the final sco
 opportunities for programs to optimize specifically toward these metrics rather than strictly
 improving physical tracking accuracy. 
 
-# Config
+# Configuration
 Both programs are run with 100 max iterations and 3 islands
 
 # Conclusion
