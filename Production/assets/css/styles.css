@@ -123,10 +123,14 @@ body{
 
 .hud-left{
   grid-area:left;
+  min-height:0;
+  overflow:hidden;
 }
 
 .hud-right{
   grid-area:right;
+  min-height:0;
+  overflow:hidden;
 }
 
 .hud-bottom{
@@ -134,15 +138,44 @@ body{
   display:grid;
   grid-template-columns:2fr 2fr 1fr;
   gap:12px;
+  min-height:0;
 }
 
+/* ===== Center area scroll fix ===== */
 .hud-center{
   grid-area:center;
-  display:grid;
-  grid-template-rows:auto auto 1fr;
+  display:flex;
+  flex-direction:column;
   gap:12px;
   min-height:0;
-  overflow:hidden;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-right:6px;
+  align-content:start;
+}
+
+.hud-center > .center-header,
+.hud-center > .dynamic-dropzone,
+.hud-center > .card,
+.hud-center > .grid-3{
+  flex:0 0 auto;
+}
+
+.hud-center::-webkit-scrollbar{
+  width:8px;
+}
+
+.hud-center::-webkit-scrollbar-track{
+  background:transparent;
+}
+
+.hud-center::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.14);
+  border-radius:999px;
+}
+
+.hud-center::-webkit-scrollbar-thumb:hover{
+  background:rgba(255,255,255,.24);
 }
 
 /* ===== Panels ===== */
@@ -347,6 +380,51 @@ body{
   height:320px;
 }
 
+/* ===== Main Combined Score / Performance card ===== */
+.hud-center > .card.card-lg.no-border{
+  min-height:340px;
+  align-self:stretch;
+}
+
+.card.card-lg.no-border{
+  overflow:hidden;
+}
+
+.card.card-lg.no-border .card-header{
+  min-height:118px;
+  padding:18px 16px 18px;
+  align-items:flex-start;
+}
+
+.card.card-lg.no-border .card-title{
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+  min-width:0;
+}
+
+.card.card-lg.no-border .card-title .metric-label{
+  margin-bottom:6px;
+}
+
+#mainMetricTitle{
+  margin:8px 0 0;
+  line-height:1.12;
+  font-size:clamp(28px, 2.2vw, 36px);
+  font-weight:800;
+}
+
+.card.card-lg.no-border .card-body.tall{
+  height:210px;
+  padding-top:4px;
+}
+
+.card.card-lg.no-border canvas{
+  display:block;
+  width:100% !important;
+  height:100% !important;
+}
+
 .settings-btn{
   border:0;
   background:var(--chip);
@@ -361,31 +439,15 @@ body{
   grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));
   gap:12px;
   align-content:start;
+  min-height:0;
 }
 
-/* ===== Scroll only the middle chart section in normal mode ===== */
-body:not(.focus-mode) .hud-center{
-  overflow-y:auto;
-  overflow-x:hidden;
-  padding-right:6px;
-  align-content:start;
+.grid-3 .card{
+  min-height:0;
 }
 
-body:not(.focus-mode) .hud-center::-webkit-scrollbar{
-  width:8px;
-}
-
-body:not(.focus-mode) .hud-center::-webkit-scrollbar-track{
-  background:transparent;
-}
-
-body:not(.focus-mode) .hud-center::-webkit-scrollbar-thumb{
-  background:rgba(255,255,255,.14);
-  border-radius:999px;
-}
-
-body:not(.focus-mode) .hud-center::-webkit-scrollbar-thumb:hover{
-  background:rgba(255,255,255,.24);
+.grid-3 .card .card-body{
+  height:220px;
 }
 
 /* ===== Welcome overlay ===== */
@@ -485,52 +547,52 @@ body.welcome-open .hud{
 
 /* ===== 3DView Welcome Animation ===== */
 .welcome-globe-shell {
-  position: absolute;
-  left: 50%;
-  top: 55%;
-  transform: translate(-50%, -50%);
-  width: 470px;
-  height: 470px;
-  border-radius: 50%;
+  position:absolute;
+  left:50%;
+  top:55%;
+  transform:translate(-50%, -50%);
+  width:470px;
+  height:470px;
+  border-radius:50%;
   background:
     radial-gradient(circle at center, rgba(255,255,255,0.06), rgba(255,255,255,0.01) 58%, rgba(255,255,255,0.00) 74%);
   box-shadow:
     0 0 60px rgba(255,255,255,0.04),
     0 0 120px rgba(255,255,255,0.02);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: visible;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:visible;
 }
 
 .welcome-orbit-light {
-  position: absolute;
-  inset: 6px;
-  border-radius: 50%;
-  pointer-events: none;
-  opacity: 0;
-  z-index: 5;
+  position:absolute;
+  inset:6px;
+  border-radius:50%;
+  pointer-events:none;
+  opacity:0;
+  z-index:5;
 }
 
 .welcome-orbit-light::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border-top: 4px solid rgba(170, 220, 255, 0.95);
-  border-right: 4px solid rgba(120, 195, 255, 0.75);
-  border-bottom: 4px solid rgba(70, 150, 255, 0.08);
-  border-left: 4px solid rgba(70, 150, 255, 0.08);
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  border-top:4px solid rgba(170, 220, 255, 0.95);
+  border-right:4px solid rgba(120, 195, 255, 0.75);
+  border-bottom:4px solid rgba(70, 150, 255, 0.08);
+  border-left:4px solid rgba(70, 150, 255, 0.08);
   box-shadow:
     0 0 10px rgba(170, 220, 255, 0.95),
     0 0 22px rgba(110, 190, 255, 0.8),
     0 0 38px rgba(80, 170, 255, 0.45);
-  transform: rotate(-35deg);
+  transform:rotate(-35deg);
 }
 
 .welcome-globe-shell.entering .welcome-orbit-light {
-  opacity: 1;
-  animation: orbitSweep 1.6s ease-in-out forwards;
+  opacity:1;
+  animation:orbitSweep 1.6s ease-in-out forwards;
 }
 
 .welcome-globe-shell.entering .welcome-earth {
@@ -543,19 +605,19 @@ body.welcome-open .hud{
 
 @keyframes orbitSweep {
   0% {
-    transform: rotate(0deg);
-    opacity: 0;
+    transform:rotate(0deg);
+    opacity:0;
   }
   10% {
-    opacity: 1;
+    opacity:1;
   }
   85% {
-    transform: rotate(360deg);
-    opacity: 1;
+    transform:rotate(360deg);
+    opacity:1;
   }
   100% {
-    transform: rotate(420deg);
-    opacity: 0;
+    transform:rotate(420deg);
+    opacity:0;
   }
 }
 
@@ -585,31 +647,75 @@ body.graphs-mode .dynamic-dropzone{
   display:block !important;
 }
 
+body.graphs-mode #metricCardsGrid{
+  display:none;
+}
+
+/* Radar card */
 .graphs-radar-shell{
-  min-height:520px;
+  min-height:570px;
 }
 
 .graphs-radar-body{
-  height:460px;
+  height:490px;
   display:flex;
   flex-direction:column;
+  overflow:hidden;
+  padding:8px 12px 8px;
 }
 
 .graphs-radar-body canvas{
   flex:1 1 auto;
   min-height:0;
+  max-height:392px;
+}
+
+/* Horizontal iteration selector */
+.graphs-radar-legend-scroll{
+  flex:0 0 52px;
+  width:100%;
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:2px 0 8px;
+  margin-top:0;
+  scrollbar-gutter:stable;
+}
+
+.graphs-radar-legend-scroll::-webkit-scrollbar{
+  height:8px;
+}
+
+.graphs-radar-legend-scroll::-webkit-scrollbar-track{
+  background:rgba(255,255,255,0.04);
+  border-radius:999px;
+}
+
+.graphs-radar-legend-scroll::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.22);
+  border-radius:999px;
+}
+
+.graphs-radar-legend-scroll::-webkit-scrollbar-thumb:hover{
+  background:rgba(255,255,255,.35);
 }
 
 .graphs-radar-legend{
-  display:flex;
-  flex-wrap:wrap;
+  display:flex !important;
+  flex-wrap:nowrap !important;
   gap:10px;
   align-items:center;
-  margin-top:14px;
+  width:max-content;
+  min-width:100%;
+  padding:0 4px;
+  margin-top:0;
 }
 
 .graphs-radar-toggle{
   appearance:none;
+  flex:0 0 auto;
+  white-space:nowrap;
+  min-height:34px;
   background:rgba(255,255,255,.06);
   color:var(--text);
   border:1px solid rgba(255,255,255,.12);
@@ -673,7 +779,7 @@ body.focus-mode .hud-bottom{
 
 body.focus-mode .hud{
   height:100vh;
-  padding:16px;
+  padding:12px;
   grid-template-columns:1fr;
   grid-template-rows:1fr;
   grid-template-areas:"center";
@@ -685,9 +791,20 @@ body.focus-mode .hud-center{
   width:100%;
   overflow-y:auto;
   overflow-x:hidden;
-  grid-template-rows:auto auto 1fr;
-  align-content:start;
   padding-right:6px;
+}
+
+/* Remove the black top bar in Focus mode */
+body.focus-mode .center-header{
+  position:static;
+  top:auto;
+  z-index:auto;
+  padding:0;
+  margin:0;
+  background:transparent;
+  backdrop-filter:none;
+  border:none;
+  box-shadow:none;
 }
 
 body.focus-mode .card-body.tall{
@@ -696,15 +813,6 @@ body.focus-mode .card-body.tall{
 
 body.focus-mode .grid-3 .card .card-body{
   height:220px;
-}
-
-body.focus-mode .center-header{
-  position:sticky;
-  top:0;
-  z-index:10;
-  padding-bottom:10px;
-  background:rgba(0,0,0,.35);
-  backdrop-filter:blur(10px);
 }
 
 .zoom-controls{
@@ -935,6 +1043,7 @@ body.focus-mode .center-header{
 
   .hud-center{
     overflow:visible;
+    padding-right:0;
   }
 
   .settings-shell{
@@ -1010,11 +1119,14 @@ body.focus-mode .center-header{
 }
 
 .graphs-radar-shell.graphs-radar-fullscreen .graphs-radar-body{
-  height:calc(100vh - 110px);
+  height:calc(100vh - 120px);
+}
+
+.graphs-radar-shell.graphs-radar-fullscreen .graphs-radar-body canvas{
+  max-height:none;
 }
 
 .graphs-radar-shell.graphs-radar-fullscreen canvas{
   width:100% !important;
   height:100% !important;
 }
-
