@@ -94,6 +94,7 @@
 
   async function init() {
     cacheDom();
+    injectGraphsLegendScrollStyles();
     initializeMainChart();
     setupTabs();
     setupWelcome();
@@ -131,6 +132,91 @@
     if (dynamicTab) {
       dynamicTab.textContent = 'Graphs';
     }
+  }
+
+  function injectGraphsLegendScrollStyles() {
+    if (document.getElementById('graphsLegendScrollInjectedStyles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'graphsLegendScrollInjectedStyles';
+    style.textContent = `
+      .graphs-radar-shell{
+        min-height:570px;
+      }
+
+      .graphs-radar-body{
+        height:490px;
+        display:flex;
+        flex-direction:column;
+        overflow:hidden;
+        padding-bottom:8px;
+      }
+
+      .graphs-radar-body canvas{
+        flex:1 1 auto;
+        min-height:0;
+        max-height:392px;
+      }
+
+      .graphs-radar-legend-scroll{
+        flex:0 0 52px;
+        width:100%;
+        max-width:100%;
+        overflow-x:auto;
+        overflow-y:hidden;
+        padding:2px 0 8px;
+        margin-top:0;
+        scrollbar-gutter:stable;
+      }
+
+      .graphs-radar-legend-scroll::-webkit-scrollbar{
+        height:8px;
+      }
+
+      .graphs-radar-legend-scroll::-webkit-scrollbar-track{
+        background:rgba(255,255,255,0.04);
+        border-radius:999px;
+      }
+
+      .graphs-radar-legend-scroll::-webkit-scrollbar-thumb{
+        background:rgba(255,255,255,.22);
+        border-radius:999px;
+      }
+
+      .graphs-radar-legend-scroll::-webkit-scrollbar-thumb:hover{
+        background:rgba(255,255,255,.35);
+      }
+
+      .graphs-radar-legend{
+        display:flex !important;
+        flex-wrap:nowrap !important;
+        gap:10px;
+        align-items:center;
+        width:max-content;
+        min-width:100%;
+        padding:0 4px;
+      }
+
+      .graphs-radar-toggle{
+        flex:0 0 auto;
+        white-space:nowrap;
+        min-height:34px;
+      }
+
+      .graphs-radar-shell.graphs-radar-fullscreen{
+        min-height:auto;
+      }
+
+      .graphs-radar-shell.graphs-radar-fullscreen .graphs-radar-body{
+        height:calc(100vh - 120px);
+      }
+
+      .graphs-radar-shell.graphs-radar-fullscreen .graphs-radar-body canvas{
+        max-height:none;
+      }
+    `;
+
+    document.head.appendChild(style);
   }
 
   function initializeMainChart() {
@@ -272,10 +358,6 @@
     requestAnimationFrame(() => requestAnimationFrame(doScroll));
   }
 
-  function toXYFromY(points) {
-    return points.map((y, index) => ({ x: index + 1, y }));
-  }
-
   function chartBaseOptions() {
     return {
       responsive: true,
@@ -392,10 +474,10 @@
       };
     }
 
-    const recentRows = rows.slice(-8);
+    const recentRows = rows;
 
     return recentRows.map((row, index) => {
-      const hue = Math.round((index / Math.max(1, recentRows.length)) * 300);
+      const hue = Math.round((index / Math.max(1, recentRows.length)) * 360);
       const label = `iter.${row.current_iteration}`;
 
       return {
@@ -413,16 +495,16 @@
         }),
         fill: true,
         hidden: state.graphsHiddenIterations.has(label),
-        backgroundColor: hsla(hue, 85, 65, 0.12),
-        borderColor: hsla(hue, 90, 68, 0.85),
-        pointBackgroundColor: hsla(hue, 92, 72, 0.98),
+        backgroundColor: hsla(hue, 85, 65, 0.08),
+        borderColor: hsla(hue, 90, 68, 0.75),
+        pointBackgroundColor: hsla(hue, 92, 72, 0.95),
         pointBorderColor: hsla(hue, 92, 72, 1),
         pointHoverBackgroundColor: hsla(hue, 92, 72, 1),
         pointHoverBorderColor: '#ffffff',
-        pointRadius: 4,
-        pointHoverRadius: 8,
-        pointHitRadius: 26,
-        borderWidth: 1.25
+        pointRadius: 3,
+        pointHoverRadius: 7,
+        pointHitRadius: 22,
+        borderWidth: 1
       };
     });
   }
@@ -454,7 +536,9 @@
         </div>
         <div class="card-body graphs-radar-body">
           <canvas id="graphsRadarCanvas"></canvas>
-          <div id="graphsRadarLegend" class="graphs-radar-legend" style="margin-top:14px; display:flex; flex-wrap:wrap; gap:10px;"></div>
+          <div class="graphs-radar-legend-scroll">
+            <div id="graphsRadarLegend" class="graphs-radar-legend"></div>
+          </div>
         </div>
       </div>
     `;
@@ -559,6 +643,7 @@
 
       btn.addEventListener('click', () => {
         const label = dataset.label;
+
         if (state.graphsHiddenIterations.has(label)) {
           state.graphsHiddenIterations.delete(label);
         } else {
@@ -619,7 +704,9 @@
 
     body.innerHTML = `
       <canvas id="graphsRadarCanvas"></canvas>
-      <div id="graphsRadarLegend" class="graphs-radar-legend" style="margin-top:14px; display:flex; flex-wrap:wrap; gap:10px;"></div>
+      <div class="graphs-radar-legend-scroll">
+        <div id="graphsRadarLegend" class="graphs-radar-legend"></div>
+      </div>
     `;
 
     const canvas = body.querySelector('#graphsRadarCanvas');
@@ -648,12 +735,12 @@
         elements: {
           line: {
             tension: 0.08,
-            borderWidth: 1.25
+            borderWidth: 1
           },
           point: {
-            radius: 4,
-            hoverRadius: 8,
-            hitRadius: 26,
+            radius: 3,
+            hoverRadius: 7,
+            hitRadius: 22,
             borderWidth: 1
           }
         },
@@ -1311,7 +1398,7 @@
       autoFitPerfYToCurrentX(chart);
     };
 
-    dom.zoomInBtn.addEventListener('click', () => {
+    const zoomIn = () => {
       const chart = state.perfChart;
       const points = chart?.data?.datasets?.[0]?.data || [];
       if (!points.length) return;
@@ -1319,6 +1406,8 @@
       const xs = points.map(point => Number(point.x)).filter(Number.isFinite);
       const fullMin = Math.min(...xs);
       const fullMax = Math.max(...xs);
+
+      if (!Number.isFinite(fullMin) || !Number.isFinite(fullMax) || fullMin === fullMax) return;
 
       const viewport = getChartViewport(chart);
       const currentMin = viewport?.min ?? fullMin;
@@ -1327,9 +1416,9 @@
       const width = Math.max(2, (currentMax - currentMin) * 0.7);
 
       applyViewport(center - width / 2, center + width / 2);
-    });
+    };
 
-    dom.zoomOutBtn.addEventListener('click', () => {
+    const zoomOut = () => {
       const chart = state.perfChart;
       const points = chart?.data?.datasets?.[0]?.data || [];
       if (!points.length) return;
@@ -1337,6 +1426,8 @@
       const xs = points.map(point => Number(point.x)).filter(Number.isFinite);
       const fullMin = Math.min(...xs);
       const fullMax = Math.max(...xs);
+
+      if (!Number.isFinite(fullMin) || !Number.isFinite(fullMax) || fullMin === fullMax) return;
 
       const viewport = getChartViewport(chart);
       const currentMin = viewport?.min ?? fullMin;
@@ -1348,9 +1439,9 @@
         Math.max(fullMin, center - width / 2),
         Math.min(fullMax, center + width / 2)
       );
-    });
+    };
 
-    dom.resetZoomBtn.addEventListener('click', () => {
+    const resetZoom = () => {
       const chart = state.perfChart;
       if (!chart) return;
 
@@ -1359,6 +1450,36 @@
       state.perfUserViewport = null;
       state.perfUserInteracted = false;
       chart.update('none');
+    };
+
+    dom.zoomInBtn.addEventListener('click', zoomIn);
+    dom.zoomOutBtn.addEventListener('click', zoomOut);
+    dom.resetZoomBtn.addEventListener('click', resetZoom);
+
+    document.addEventListener('keydown', event => {
+      const target = event.target;
+      const tagName = String(target?.tagName || '').toLowerCase();
+      const isTyping =
+        tagName === 'input' ||
+        tagName === 'textarea' ||
+        tagName === 'select' ||
+        target?.isContentEditable;
+
+      if (isTyping) return;
+
+      const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+      if (!isCtrlOrCmd) return;
+
+      if (event.key === '+' || event.key === '=') {
+        event.preventDefault();
+        zoomIn();
+      } else if (event.key === '-') {
+        event.preventDefault();
+        zoomOut();
+      } else if (event.key === '0') {
+        event.preventDefault();
+        resetZoom();
+      }
     });
   }
 
@@ -1375,7 +1496,7 @@
     for (const row of validObs) {
       const range = safeNumber(row?.range ?? row?.rng ?? row?.slant_range);
       const los = safeNumber(row?.los_unc ?? row?.los_uncertainty ?? row?.line_of_sight_unc);
-      const sensor = String(row?.sensor ?? '').trim();
+      const sensor = String(row?.sensor ?? row?.idSensor ?? row?.id_sensor ?? '').trim();
       const epoch = row?.epoch || row?.time || row?.timestamp || null;
 
       if (Number.isFinite(range)) rangeValues.push(range);
@@ -1439,7 +1560,6 @@
       avgLos,
       latestObs,
       uniqueSensors: sensors.size,
-      TBD,
       spanMinutes,
       losGt3,
       nanSensorCount,
@@ -1449,7 +1569,6 @@
   }
 
   function renderOuterPanels(metrics) {
-    // DATASET OBSERVATION PANEL
     setText('tAvgRange', Number.isFinite(metrics.avgRange) ? fmtNum(metrics.avgRange, 2) : '—');
     setText('tAvgLos', Number.isFinite(metrics.avgLos) ? fmtNum(metrics.avgLos, 3) : '—');
     setText('tLatest', metrics.latestObs || '—');
@@ -1459,11 +1578,15 @@
     setText('qFlagged', fmtInt(metrics.losGt3 + metrics.rangeJump));
 
     setText('passWindow', Number.isFinite(metrics.spanMinutes) ? `${fmtInt(metrics.spanMinutes)} min span` : '—');
+
     setText('cSensors', fmtInt(metrics.uniqueSensors));
+    setText('cUniqueSensors', fmtInt(metrics.uniqueSensors));
+    setText('cTBD', fmtInt(metrics.uniqueSensors));
 
     setText('aLosHigh', fmtInt(metrics.losGt3));
     setText('aNanSensor', fmtInt(metrics.nanSensorCount));
     setText('aRangeJump', fmtInt(metrics.rangeJump));
+    setText('aTBD', fmtInt(metrics.rangeJump));
 
     setText('opsOperators', 'TBD');
     setText('opsJobs', fmtInt(metrics.totalObs));
